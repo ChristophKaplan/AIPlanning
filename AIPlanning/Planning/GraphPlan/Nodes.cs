@@ -13,9 +13,29 @@ public abstract class Node {
         MutexRelation = new List<Node>();
     }
     
-    public void ConnectTo(Node node) {
-        OutEdges.Add(node);
-        node.InEdges.Add(this);
+    public void ConnectTo(Node connectToMe) {
+        OutEdges.Add(connectToMe);
+        connectToMe.InEdges.Add(this);
+    }
+
+    public bool IsMutex(Node other) {
+        if (Equals(other)) return false;
+
+        return this switch {
+            StateNode s1 when other is StateNode s2 => s1.IsInconsistentSupport(s2) || s1.Literal.IsNegationOf(s2.Literal),
+            ActionNode a1 when other is ActionNode a2 => a1.IsInconsistentEffects( a2) || a1.IsInterference( a2) || a1.IsConflictingNeeds(a2),
+            _ => throw new Exception("Invalid node type")
+        };
+    }
+    
+    public void TryAddMutexRelations(Node other) {
+        if (!MutexRelation.Contains(other)) {
+            MutexRelation.Add(other);
+        }
+
+        if (!other.MutexRelation.Contains(this)) {
+            other.MutexRelation.Add(this);
+        }
     }
 }
 
@@ -41,6 +61,19 @@ public class ActionNode : Node {
         }
         
         return false;
+    }
+    
+    public bool IsInconsistentEffects(ActionNode other) {
+        return Action.Effects.Any(effect => other.Action.Effects.Any(effect.IsNegationOf));
+    }
+
+    public bool IsInterference(ActionNode other) {
+        return Action.Effects.Any(effect => other.Action.Preconditions.Any(effect.IsNegationOf)) ||
+               other.Action.Effects.Any(effect => Action.Preconditions.Any(effect.IsNegationOf));
+    }
+
+    public bool IsConflictingNeeds(ActionNode other) {
+        return Action.Preconditions.Any(preCon => other.Action.Preconditions.Any(preCon.IsNegationOf));
     }
 }
 
@@ -68,5 +101,9 @@ public class StateNode : Node {
     
     public bool EqualLiteral(StateNode stateNode) {
         return Literal.Equals(stateNode.Literal);
+    }
+    
+    public bool IsInconsistentSupport(StateNode other) {
+        return InEdges.Any(inNode => other.InEdges.Any(inNode.IsMutex));
     }
 }

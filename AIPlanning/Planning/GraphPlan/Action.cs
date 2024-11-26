@@ -1,9 +1,9 @@
 namespace FirstOrderLogic.Planning.GraphPlan;
 
 public class Action {
-    public string Name { get; set; }
-    public List<ISentence> Preconditions { get; set; }
-    public List<ISentence> Effects { get; set; }
+    private string Name { get; }
+    public List<ISentence> Preconditions { get; }
+    public List<ISentence> Effects { get; }
 
     public Action(string name, List<ISentence> preconditions, List<ISentence> effects) {
         Name = name;
@@ -11,10 +11,11 @@ public class Action {
         Effects = effects;
     }
 
-    public bool IsApplicable(List<StateNode> state, out List<StateNode> satisfiedPreconditions) {
-        satisfiedPreconditions = new List<StateNode>();
+    public bool IsApplicable(List<StateNode> state, out List<Node> satisfiedPreconditions) {
+        satisfiedPreconditions = [];
         foreach (var precondition in Preconditions) {
-            var satisfied = state.FirstOrDefault(s => s.Literal.Equals(precondition));
+            
+            var satisfied = state.FirstOrDefault(stateNode => precondition.Equals(stateNode.Literal));
             if (satisfied == null) {
                 return false;
             }
