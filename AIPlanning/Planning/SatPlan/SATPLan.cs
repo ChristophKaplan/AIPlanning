@@ -5,6 +5,10 @@ using LRParser.Language;
 
 namespace FirstOrderLogic.Planning;
 
+
+//
+// Work in Progress
+//
 public class SATPLan {
     readonly FirstOrderLogic _firstOrderLogic = new ();
     readonly SatSolvers _satSolvers = new ();
