@@ -1,27 +1,21 @@
 namespace FirstOrderLogic.Planning.GraphPlan;
 
-public static class ActionFabric {
+public static class GpActionFabric {
     static readonly FirstOrderLogic Logic = new ();
-    public static Action Create(string name, List<string> preconditions, List<string> effects) {
-        return new Action(name, preconditions.Select(p => (ISentence)Logic.TryParse(p)).ToList(), effects.Select(e => (ISentence)Logic.TryParse(e)).ToList());
+    public static GpAction Create(string name, List<string> preconditions, List<string> effects) {
+        return new GpAction(name, preconditions.Select(p => (ISentence)Logic.TryParse(p)).ToList(), effects.Select(e => (ISentence)Logic.TryParse(e)).ToList());
     }
     public static List<ISentence> StringToSentence(List<string> strings) {
         return new List<ISentence>(strings.Select(s => (ISentence)Logic.TryParse(s)));
     }
 }
 
-public class Action {
-    private string Name { get; }
-    public List<ISentence> Preconditions { get; }
-    public List<ISentence> Effects { get; }
+public class GpAction(string name, List<ISentence> preconditions, List<ISentence> effects) {
+    private string Name { get; } = name;
+    public List<ISentence> Preconditions { get; } = preconditions;
+    public List<ISentence> Effects { get; } = effects;
 
-    public Action(string name, List<ISentence> preconditions, List<ISentence> effects) {
-        Name = name;
-        Preconditions = preconditions;
-        Effects = effects;
-    }
-
-    public bool IsApplicable(List<StateNode> state, out List<Node> satisfiedPreconditions) {
+    public bool IsApplicable(List<GpStateNode> state, out List<GpNode> satisfiedPreconditions) {
         satisfiedPreconditions = [];
         foreach (var precondition in Preconditions) {
             

@@ -2,21 +2,13 @@ using System.Text;
 
 namespace FirstOrderLogic.Planning.GraphPlan;
 
-public class Graph {
-    private readonly Dictionary<int, Layer> _layers = new();
-    private readonly List<Action> _actions;
-    private readonly List<ISentence> _initialState;
-    private readonly List<ISentence> _goal;
-    public int NumLevels => _layers.Count;
+public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<GpAction> actions) {
+    private readonly Dictionary<int, GpLayer> _layers = new();
 
-    public Graph(List<ISentence> initialState, List<ISentence> goal, List<Action> actions) {
-        _initialState = initialState;
-        _goal = goal;
-        _actions = actions;
-
-        var initialLayer = new Layer(0);
-        foreach (var sentence in _initialState) {
-            initialLayer.TryAdd(new StateNode(0, sentence));
+    public void Init() {
+        var initialLayer = new GpLayer(0);
+        foreach (var sentence in initialState) {
+            initialLayer.TryAdd(new GpStateNode(0, sentence));
         }
         
         _layers.Add(0, initialLayer);
@@ -28,14 +20,18 @@ public class Graph {
         return state != null;
     }
 
-    public List<Action> ExtractSolution(int levelIndex, List<(int level, List<Node> subGoalState)> nogoods) {
+    public List<GpAction> ExtractSolution(int levelIndex, List<(int level, List<GpNode> subGoalState)> nogoods) {
         var lastState = _layers[levelIndex].StateNodes;
-        var conflictFreeStateFromGoals = GetConflictFreeStateFromGoals(lastState, _goal);
+        var conflictFreeStateFromGoals = GetConflictFreeStateFromGoals(lastState, goal);
 
         var isSat = false;
         var currentState = conflictFreeStateFromGoals;
-        var solution = new List<Action>();
+        var solution = new List<GpAction>();
 
+        if(nogoods.Contains((levelIndex, currentState))) {
+            throw new NotImplementedException();
+        }
+        
         while (!isSat) {
             var actions = GetConflictFreeSubsetOfIncomingNodes(currentState);
 
@@ -47,29 +43,29 @@ public class Graph {
             currentState = GetConflictFreeSubsetOfIncomingNodes(actions);
 
             isSat = currentState.All(s => s.Level == 0);
-            solution.AddRange(actions.Select(n => (ActionNode)n).Select(n => n.Action));
+            solution.AddRange(actions.Select(n => (GpActionNode)n).Select(n => n.GpAction));
         }
 
         solution.Reverse();
         return solution;
     }
 
-    private List<Node> GetConflictFreeSubsetOfIncomingNodes(List<Node> nodes) {
+    private List<GpNode> GetConflictFreeSubsetOfIncomingNodes(List<GpNode> nodes) {
         var incomingNodes = nodes.SelectMany(node => node.InEdges).ToList();
         return GetConflictFreeSubset(incomingNodes);
     }
 
-    private List<Node> GetConflictFreeStateFromGoals(List<StateNode> state, List<ISentence> goals) {
+    private List<GpNode> GetConflictFreeStateFromGoals(List<GpStateNode> state, List<ISentence> goals) {
         var stateNodesSubset = GetSatisfiedState(state, goals);
         return stateNodesSubset == null ? null : GetConflictFreeSubset(stateNodesSubset);
     }
 
-    private List<Node> GetConflictFreeSubset(List<Node> nodes) {
+    private List<GpNode> GetConflictFreeSubset(List<GpNode> nodes) {
         return nodes.Where(actionNode => !actionNode.MutexRelation.Any(nodes.Contains)).ToList();
     }
 
-    private List<Node> GetSatisfiedState(List<StateNode> state, List<ISentence> satSentences) {
-        var nodesSubset = new List<Node>();
+    private List<GpNode> GetSatisfiedState(List<GpStateNode> state, List<ISentence> satSentences) {
+        var nodesSubset = new List<GpNode>();
         foreach (var sentence in satSentences) {
             nodesSubset.AddRange(state.Where(node => sentence.Equals(node.Literal)));
         }
@@ -83,7 +79,7 @@ public class Graph {
 
     public void ExpandGraph() {
         var lastLayer = _layers.Last().Value;
-        lastLayer.ExpandActionNodes(_actions);
+        lastLayer.ExpandActionNodes(actions);
         var nextLayer = lastLayer.ExpandNextLayer();
         _layers.Add(nextLayer.Level, nextLayer);
     }

@@ -3,16 +3,18 @@ using Helpers;
 namespace FirstOrderLogic.Planning.GraphPlan;
 
 public class GraphPlan {
-    public List<Action> Run(List<ISentence> initialState, List<ISentence> goals, List<Action> actions) {
-        var graph = new Graph(initialState, goals, actions);
-        List<(int level, List<Node> subGoalState)> nogoods = new();
+    public List<GpAction> Run(List<ISentence> initialState, List<ISentence> goals, List<GpAction> actions) {
+        var graph = new GpGraph(initialState, goals, actions);
+        graph.Init();
+        
+        List<(int level, List<GpNode> subGoalState)> nogoods = new();
         var levelIndex = 0;
 
         while (true) {
             if (graph.StateNotMutex(levelIndex, goals)) {
                 var solution = graph.ExtractSolution(levelIndex, nogoods);
                 if (solution is { Count: > 0 }) {
-                    Logger.Log($"Solution found: {solution.Aggregate("", (acc, action) => acc +"\n"+ action.ToString()) }");
+                    Logger.Log($"Solution found: {solution.Aggregate("", (acc, action) => acc + "\n" + action.ToString())}");
                     return solution;
                 }
             }
