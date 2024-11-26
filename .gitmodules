@@ -1,0 +1,3 @@
+[submodule "AIPlanning/FirstOrderLogic"]
+	path = AIPlanning/FirstOrderLogic
+	url = git@github.com:ChristophKaplan/FirstOrderLogic.git
