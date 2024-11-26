@@ -1,5 +1,15 @@
 namespace FirstOrderLogic.Planning.GraphPlan;
 
+public static class ActionFabric {
+    static readonly FirstOrderLogic Logic = new ();
+    public static Action Create(string name, List<string> preconditions, List<string> effects) {
+        return new Action(name, preconditions.Select(p => (ISentence)Logic.TryParse(p)).ToList(), effects.Select(e => (ISentence)Logic.TryParse(e)).ToList());
+    }
+    public static List<ISentence> StringToSentence(List<string> strings) {
+        return new List<ISentence>(strings.Select(s => (ISentence)Logic.TryParse(s)));
+    }
+}
+
 public class Action {
     private string Name { get; }
     public List<ISentence> Preconditions { get; }

@@ -1,13 +1,13 @@
 namespace FirstOrderLogic.Planning.GraphPlan;
 
 public abstract class Node {
-    public Layer Layer { get; set; }
+    public int Level { get; set; }
     public List<Node> InEdges { get; set; }
     public List<Node> OutEdges { get; set; }
     public List<Node> MutexRelation { get; set; }
     
-    protected Node(Layer layer) {
-        Layer = layer;
+    protected Node(int level) {
+        Level = level;
         InEdges = new List<Node>();
         OutEdges = new List<Node>();
         MutexRelation = new List<Node>();
@@ -42,7 +42,7 @@ public abstract class Node {
 public class ActionNode : Node {
     public bool IsPersistenceAction { get; set; }
     public Action Action { get; set; }
-    public ActionNode(Layer layer, Action action, bool isPersistenceAction) : base(layer) {
+    public ActionNode(int level, Action action, bool isPersistenceAction) : base(level) {
         IsPersistenceAction = isPersistenceAction;
         Action = action;
     }
@@ -57,7 +57,7 @@ public class ActionNode : Node {
 
     public override bool Equals(object? obj) {
         if(obj is ActionNode actionNode) {
-            return Layer.Equals(actionNode.Layer) && Action.Equals(actionNode.Action) && IsPersistenceAction == actionNode.IsPersistenceAction;
+            return Level.Equals(actionNode.Level) && Action.Equals(actionNode.Action) && IsPersistenceAction == actionNode.IsPersistenceAction;
         }
         
         return false;
@@ -79,7 +79,7 @@ public class ActionNode : Node {
 
 public class StateNode : Node {
     public ISentence Literal { get; set; }
-    public StateNode(Layer layer, ISentence literal) : base(layer) {
+    public StateNode(int level, ISentence literal) : base(level) {
         Literal = literal;
     }
     
@@ -93,7 +93,7 @@ public class StateNode : Node {
 
     public override bool Equals(object? obj) {
         if(obj is StateNode stateNode) {
-            return Layer.Equals(stateNode.Layer) && Literal.Equals(stateNode.Literal);
+            return Level.Equals(stateNode.Level) && Literal.Equals(stateNode.Literal);
         }
         
         return false;
