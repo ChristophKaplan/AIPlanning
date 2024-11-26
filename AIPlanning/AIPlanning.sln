@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIPlanning", "AIPlanning.csproj", "{F099B279-C366-4077-9945-E0239E678EE6}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AIPlanning", "AIPlanning.csproj", "{98594A55-B7EB-4ADF-A67E-A6C10BE45C06}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -8,9 +8,9 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{F099B279-C366-4077-9945-E0239E678EE6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F099B279-C366-4077-9945-E0239E678EE6}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F099B279-C366-4077-9945-E0239E678EE6}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F099B279-C366-4077-9945-E0239E678EE6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{98594A55-B7EB-4ADF-A67E-A6C10BE45C06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98594A55-B7EB-4ADF-A67E-A6C10BE45C06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98594A55-B7EB-4ADF-A67E-A6C10BE45C06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98594A55-B7EB-4ADF-A67E-A6C10BE45C06}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
