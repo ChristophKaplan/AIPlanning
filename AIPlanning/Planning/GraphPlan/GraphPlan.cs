@@ -1,6 +1,7 @@
+using FirstOrderLogic;
 using Helpers;
 
-namespace FirstOrderLogic.Planning.GraphPlan;
+namespace AIPlanning.Planning.GraphPlan;
 
 public class GraphPlan {
     public List<GpAction> Run(List<ISentence> initialState, List<ISentence> goals, List<GpAction> actions) {

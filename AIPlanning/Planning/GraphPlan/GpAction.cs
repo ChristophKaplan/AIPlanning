@@ -1,10 +1,12 @@
-namespace FirstOrderLogic.Planning.GraphPlan;
+using FirstOrderLogic;
+
+namespace AIPlanning.Planning.GraphPlan;
 
 public interface IGpAction {
     string Signifier { get; }
     List<ISentence> Preconditions { get; }
     List<ISentence> Effects { get; }
-    bool IsApplicable(List<GpStateNode> state, out List<GpNode> satisfiedPreconditionNodes);
+    bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes);
 }
 
 public class GpAction(string name, List<ISentence> preconditions, List<ISentence> effects) : IGpAction {
@@ -12,24 +14,27 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public List<ISentence> Preconditions { get; } = preconditions;
     public List<ISentence> Effects { get; } = effects;
 
-    public bool IsApplicable(List<GpStateNode> state, out List<GpNode> satisfiedPreconditionNodes) {
+    public bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
         satisfiedPreconditionNodes = [];
 
-        foreach (var precondition in Preconditions) {
-            foreach (var stateNode in state) {
-                if (stateNode.Literal.IsNegationOf(precondition)) {
-                    break;
-                }
-                
-                var unificator = new Unificator(precondition, stateNode.Literal);
-                if (unificator.IsUnifiable) {
-                    satisfiedPreconditionNodes.Add(stateNode);
-                    break;
-                }
-            }
+        foreach (var preCon in preconditions) {
+            var applicableNode = stateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
+            if (applicableNode == null) return false;
+            
+            satisfiedPreconditionNodes.Add(applicableNode);
         }
 
         return true;
+
+        bool ApplicableSingle(ISentence literal, ISentence preCon) {
+            var unificator = new Unificator(preCon, literal);
+            if (!unificator.IsUnifiable) return false;
+            
+            //TODO: just compare signature and negation
+            unificator.Substitute(ref literal);
+            unificator.Substitute(ref preCon);
+            return !literal.IsNegationOf(preCon);
+        }
     }
 
     public override string ToString() {

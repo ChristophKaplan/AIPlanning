@@ -1,10 +1,10 @@
-﻿using FirstOrderLogic.Planning.GraphPlan;
+﻿using AIPlanning.Planning.GraphPlan;
 
-var initialState = GpActionFabric.StringToSentence(["NOT (Have(Money))", "NOT (Job(McDonalds))", "NOT (Victim(Joe))"]);
+var initialState = GpActionFabric.StringToSentence(["NOT (Have(Money))", "Job(McDonalds)", "Victim(Joe)"]);
 var goals = GpActionFabric.StringToSentence(["Have(Money)"]);
 
-var essen = GpActionFabric.Create("Work", ["Have(Money)"], ["Job(x)"]);
-var backen = GpActionFabric.Create("Rob", ["Have(Money)"], ["Victim(x)"]);
+var work = GpActionFabric.Create("Work", ["Job(x)"], ["Have(Money)"]);
+var rob = GpActionFabric.Create("Rob", ["Victim(x)"], ["Have(Money)"]);
 
 var graph = new GraphPlan();
-var solution = graph.Run(initialState, goals, [essen, backen]);
+var solution = graph.Run(initialState, goals, [work, rob]);

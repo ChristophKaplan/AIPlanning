@@ -1,6 +1,7 @@
 using System.Text;
+using FirstOrderLogic;
 
-namespace FirstOrderLogic.Planning.GraphPlan;
+namespace AIPlanning.Planning.GraphPlan;
 
 public class GpLayer(int level) {
     public readonly int Level = level;

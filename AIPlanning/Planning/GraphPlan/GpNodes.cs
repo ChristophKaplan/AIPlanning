@@ -1,4 +1,6 @@
-namespace FirstOrderLogic.Planning.GraphPlan;
+using FirstOrderLogic;
+
+namespace AIPlanning.Planning.GraphPlan;
 
 public abstract class GpNode(int level) {
     public int Level { get; } = level;

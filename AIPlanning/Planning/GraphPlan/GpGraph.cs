@@ -1,6 +1,8 @@
 using System.Text;
+using FirstOrderLogic;
+using Helpers;
 
-namespace FirstOrderLogic.Planning.GraphPlan;
+namespace AIPlanning.Planning.GraphPlan;
 
 public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<GpAction> actions) {
     private readonly Dictionary<int, GpLayer> _layers = new();
@@ -20,34 +22,38 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         return state != null;
     }
 
-    public List<GpAction> ExtractSolution(int levelIndex, List<(int level, List<GpNode> subGoalState)> nogoods) {
+    public List<GpAction> ExtractSolution(int levelIndex, List<(int level, List<GpNode> subGoalState)> noGoods) {
         var lastState = _layers[levelIndex].StateNodes;
         var conflictFreeStateFromGoals = GetConflictFreeStateFromGoals(lastState, goal);
-
-        var isSat = false;
+        
         var currentState = conflictFreeStateFromGoals;
         var solution = new List<GpAction>();
 
-        if(nogoods.Contains((levelIndex, currentState))) {
-            throw new NotImplementedException();
+        if(noGoods.Contains((levelIndex, currentState))) {
+            Logger.Log("Already in noGoods");
+            return null;
         }
         
-        while (!isSat) {
-            var actions = GetConflictFreeSubsetOfIncomingNodes(currentState);
+        for (var step = levelIndex-1; step >= 0; step--) {
+            var currentActions = GetConflictFreeSubsetOfIncomingNodes(currentState);
 
-            if (actions.Count == 0) {
-                nogoods.Add(new(levelIndex, currentState));
+            if (currentActions.Count == 0) {
+                noGoods.Add(new(levelIndex, currentState));
                 return null;
             }
 
-            currentState = GetConflictFreeSubsetOfIncomingNodes(actions);
-
-            isSat = currentState.All(s => s.Level == 0);
-            solution.AddRange(actions.Select(n => (GpActionNode)n).Select(n => n.GpAction));
+            currentState = GetConflictFreeSubsetOfIncomingNodes(currentActions);
+            
+            var possibleActions = currentActions.Select(actionNode => ((GpActionNode)actionNode).GpAction).ToList();
+            solution.Add(ChooseAction(possibleActions, step));
         }
-
+        
         solution.Reverse();
         return solution;
+    }
+
+    private GpAction ChooseAction(List<GpAction> possibleActions, int step) {
+        return possibleActions[Random.Shared.Next(0, possibleActions.Count)];
     }
 
     private List<GpNode> GetConflictFreeSubsetOfIncomingNodes(List<GpNode> nodes) {
