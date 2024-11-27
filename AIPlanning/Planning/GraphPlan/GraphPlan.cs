@@ -7,12 +7,12 @@ public class GraphPlan {
         var graph = new GpGraph(initialState, goals, actions);
         graph.Init();
         
-        List<(int level, List<GpNode> subGoalState)> nogoods = new();
+        List<(int level, List<GpNode> subGoalState)> noGoods = new();
         var levelIndex = 0;
 
         while (true) {
             if (graph.StateNotMutex(levelIndex, goals)) {
-                var solution = graph.ExtractSolution(levelIndex, nogoods);
+                var solution = graph.ExtractSolution(levelIndex, noGoods);
                 if (solution is { Count: > 0 }) {
                     Logger.Log($"Solution found: {solution.Aggregate("", (acc, action) => acc + "\n" + action.ToString())}");
                     return solution;
