@@ -14,10 +14,12 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public List<ISentence> Preconditions { get; } = preconditions;
     public List<ISentence> Effects { get; } = effects;
 
+    public List<Unificator> Unificators { get; } = new();
+
     public bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
         satisfiedPreconditionNodes = [];
 
-        foreach (var preCon in preconditions) {
+        foreach (var preCon in Preconditions) {
             var applicableNode = stateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
             if (applicableNode == null) return false;
             
@@ -27,16 +29,26 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
         return true;
 
         bool ApplicableSingle(ISentence literal, ISentence preCon) {
-            var unificator = new Unificator(preCon, literal);
-            if (!unificator.IsUnifiable) return false;
+            var b = literal.Match(preCon, out var u);
+            Unificators.Add(u);
+            return b;
             
-            //TODO: just compare signature and negation
-            unificator.Substitute(ref literal);
-            unificator.Substitute(ref preCon);
-            return !literal.IsNegationOf(preCon);
+            if (literal.IsNegationOf(preCon, true)) {
+                return false;
+            }
+            
+            var unificator = new Unificator(preCon, literal);
+            var unify = unificator.IsUnifiable;
+            if (unify) Unificators.Add(unificator);
+            
+            return unify;
         }
     }
-
+    
+    public GpAction(GpAction action) : this(action.Signifier, 
+        action.Preconditions.Select(p => p.Clone()).ToList(), 
+        action.Effects.Select(e => e.Clone()).ToList()) { }
+    
     public override string ToString() {
         return $"{Signifier} {string.Join(",", Preconditions)} -> {string.Join(",", Effects)}";
     }

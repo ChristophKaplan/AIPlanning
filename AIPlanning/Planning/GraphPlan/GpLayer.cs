@@ -54,6 +54,9 @@ public class GpLayer(int level) {
     }
 
     public void ExpandActionNodes(List<GpAction> actions) {
+
+        actions = actions.Select(action => new GpAction(action)).ToList();
+        
         foreach (var action in actions) {
             if (!action.IsApplicable(StateNodes, out var satisfiedPreconditions)) {
                 continue;
@@ -70,6 +73,8 @@ public class GpLayer(int level) {
             stateNode.ConnectTo(actionNode);
             TryAdd(actionNode);
         }
+        
+        ActionNodes.ForEach(actionNode => actionNode.SpecifyForward());
 
         CheckMutexRelations(ActionNodes.Select(n => (GpNode)n).ToList());
     }
@@ -102,17 +107,16 @@ public class GpLayer(int level) {
     }
 
     public override string ToString() {
-        var sb = new StringBuilder();
-        sb.AppendLine($"Layer {Level}\n\t");
+        string output = $"Layer: {Level}\n";
+        
         foreach (var stateNode in StateNodes) {
-            sb.AppendLine(stateNode.ToString());
+            output += stateNode.ToString() + "\n";
         }
-
-        sb.AppendLine("\n\t");
+        output +=  "\n";
         foreach (var actionNode in ActionNodes) {
-            sb.AppendLine(actionNode.ToString());
+            output += actionNode.ToString() + "\n";
         }
-
-        return sb.ToString();
+        output +=  "\n";
+        return output;
     }
 }

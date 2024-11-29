@@ -1,10 +1,11 @@
 ﻿using AIPlanning.Planning.GraphPlan;
 
-var initialState = GpActionFabric.StringToSentence(["NOT (Have(Money))", "Job(McDonalds)", "Victim(Joe)"]);
-var goals = GpActionFabric.StringToSentence(["Have(Money)"]);
+var initialState = GpActionFabric.StringToSentence(["At(Work)"]);
+var goals = GpActionFabric.StringToSentence(["Have(Apple)", "At(Home)"]);
 
-var work = GpActionFabric.Create("Work", ["Job(x)"], ["Have(Money)"]);
-var rob = GpActionFabric.Create("Rob", ["Victim(x)"], ["Have(Money)"]);
+var pickup = GpActionFabric.Create("PickUp", ["At(Supermarket)"], ["Have(x)"]);
+var moves = GpActionFabric.Create("MoveSupermarket", ["At(x)"], ["At(Supermarket)", "NOT At(x)"]);
+var moveh = GpActionFabric.Create("MoveHome", ["At(x)"], ["At(Home)", "NOT At(x)"]);
 
 var graph = new GraphPlan();
-var solution = graph.Run(initialState, goals, [work, rob]);
+var solution = graph.Run(initialState, goals, [moves, moveh, pickup]);

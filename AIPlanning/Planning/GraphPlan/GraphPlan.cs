@@ -4,7 +4,7 @@ using Helpers;
 namespace AIPlanning.Planning.GraphPlan;
 
 public class GraphPlan {
-    public List<GpAction> Run(List<ISentence> initialState, List<ISentence> goals, List<GpAction> actions) {
+    public Dictionary<int, List<GpAction>> Run(List<ISentence> initialState, List<ISentence> goals, List<GpAction> actions) {
         var graph = new GpGraph(initialState, goals, actions);
         graph.Init();
         
@@ -15,7 +15,8 @@ public class GraphPlan {
             if (graph.StateNotMutex(levelIndex, goals)) {
                 var solution = graph.ExtractSolution(levelIndex, noGoods);
                 if (solution is { Count: > 0 }) {
-                    Logger.Log($"Solution found: {solution.Aggregate("", (acc, action) => acc + "\n" + action.ToString())}");
+                    Logger.Log($"Solution found: {solution.Aggregate("", (acc, keyValuePair) => acc + "\n STEP:" + keyValuePair.Key + " \n ACTIONS:\n" + keyValuePair.Value.Aggregate("", (acc, action) => acc + action + "\n"))}");
+                    Logger.Log(graph.ToString());
                     return solution;
                 }
             }

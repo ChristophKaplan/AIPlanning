@@ -1,4 +1,5 @@
 using System.Text;
+using ConsoleTables;
 using FirstOrderLogic;
 using Helpers;
 
@@ -22,12 +23,12 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         return state != null;
     }
 
-    public List<GpAction> ExtractSolution(int levelIndex, List<(int level, List<GpNode> subGoalState)> noGoods) {
+    public Dictionary<int, List<GpAction>> ExtractSolution(int levelIndex, List<(int level, List<GpNode> subGoalState)> noGoods) {
         var lastState = _layers[levelIndex].StateNodes;
         var conflictFreeStateFromGoals = GetConflictFreeStateFromGoals(lastState, goal);
         
         var currentState = conflictFreeStateFromGoals;
-        var solution = new List<GpAction>();
+        var solution = new Dictionary<int, List<GpAction>>();
 
         if(noGoods.Contains((levelIndex, currentState))) {
             Logger.Log("Already in noGoods");
@@ -36,7 +37,10 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         
         for (var step = levelIndex-1; step >= 0; step--) {
             var currentActions = GetConflictFreeSubsetOfIncomingNodes(currentState);
-
+            
+            currentActions.ForEach(c => ((GpActionNode)c).SpecifyBackward());
+            currentActions = GetConflictFreeSubset(currentActions);
+            
             if (currentActions.Count == 0) {
                 noGoods.Add(new(levelIndex, currentState));
                 return null;
@@ -45,16 +49,14 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
             currentState = GetConflictFreeSubsetOfIncomingNodes(currentActions);
             
             var possibleActions = currentActions.Select(actionNode => ((GpActionNode)actionNode).GpAction).ToList();
-            solution.Add(ChooseAction(possibleActions, step));
+            solution.Add(step, possibleActions);
         }
         
         solution.Reverse();
         return solution;
     }
 
-    private GpAction ChooseAction(List<GpAction> possibleActions, int step) {
-        return possibleActions[Random.Shared.Next(0, possibleActions.Count)];
-    }
+
 
     private List<GpNode> GetConflictFreeSubsetOfIncomingNodes(List<GpNode> nodes) {
         var incomingNodes = nodes.SelectMany(node => node.InEdges).ToList();
@@ -73,7 +75,7 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
     private List<GpNode> GetSatisfiedState(List<GpStateNode> state, List<ISentence> satSentences) {
         var nodesSubset = new List<GpNode>();
         foreach (var sentence in satSentences) {
-            nodesSubset.AddRange(state.Where(node => sentence.Equals(node.Literal)));
+            nodesSubset.AddRange(state.Where(node => sentence.Match(node.Literal,out var u))); //its more like the unifiyable thing ?
         }
 
         return nodesSubset.Count != satSentences.Count ? null : nodesSubset;
@@ -91,11 +93,12 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
     }
 
     public override string ToString() {
-        var sb = new StringBuilder();
+        var output = "";
         foreach (var layer in _layers) {
-            sb.AppendLine(layer.Value.ToString());
+            output += layer.Value.ToString();
         }
 
-        return sb.ToString();
+        return output;
     }
+
 }

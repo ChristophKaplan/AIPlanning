@@ -55,16 +55,55 @@ public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction
     }
 
     public bool IsInconsistentEffects(GpActionNode other) {
-        return GpAction.Effects.Any(effect => other.GpAction.Effects.Any(effect.IsNegationOf));
+        return GpAction.Effects.Any(effect => other.GpAction.Effects.Any(otherEffect => effect.IsNegationOf(otherEffect)));
     }
 
     public bool IsInterference(GpActionNode other) {
-        return GpAction.Effects.Any(effect => other.GpAction.Preconditions.Any(effect.IsNegationOf)) ||
-               other.GpAction.Effects.Any(effect => GpAction.Preconditions.Any(effect.IsNegationOf));
+        return GpAction.Effects.Any(effect => other.GpAction.Preconditions.Any(otherPreCon => effect.IsNegationOf(otherPreCon))) ||
+               other.GpAction.Effects.Any(effect => GpAction.Preconditions.Any(preCon => effect.IsNegationOf(preCon)));
     }
 
     public bool IsConflictingNeeds(GpActionNode other) {
-        return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(preCon.IsNegationOf));
+        return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
+    }
+
+    public void SpecifyForward() {
+        return;
+        foreach (var inEdge in InEdges) {
+            var temp = ((GpStateNode)inEdge);
+            
+            foreach (var uni in GpAction.Unificators) {
+                var tempLiteral = temp.Literal;
+                uni.Substitute(ref tempLiteral);
+            }
+        }
+        
+        foreach (var outEdge in OutEdges) {
+            var temp = ((GpStateNode)outEdge);
+            
+            foreach (var uni in GpAction.Unificators) {
+                var tempLiteral = temp.Literal;
+                uni.Substitute(ref tempLiteral);
+            }
+        }
+        
+        foreach (var preCon in GpAction.Preconditions) {
+            foreach (var uni in GpAction.Unificators) {
+                var tempPreCon = preCon;
+                uni.Substitute(ref tempPreCon);
+            }
+        }
+        
+        foreach (var effect in GpAction.Effects) {
+            foreach (var uni in GpAction.Unificators) {
+                var tempEffect = effect;
+                uni.Substitute(ref tempEffect);
+            }
+        }
+    }
+    
+    public void SpecifyBackward() {
+
     }
 }
 
