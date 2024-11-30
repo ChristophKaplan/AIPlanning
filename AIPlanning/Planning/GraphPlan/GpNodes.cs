@@ -68,7 +68,26 @@ public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction
     }
 
     public void SpecifyForward() {
-        return;
+  
+
+    }
+    
+    public void SpecifyBackward() {
+
+        foreach (var preCon in GpAction.Preconditions) {
+            foreach (var uni in GpAction.Unificators) {
+                var tempPreCon = preCon;
+                uni.Substitute(ref tempPreCon);
+            }
+        }
+        
+        foreach (var effect in GpAction.Effects) {
+            foreach (var uni in GpAction.Unificators) {
+                var tempEffect = effect;
+                uni.Substitute(ref tempEffect);
+            }
+        }
+        
         foreach (var inEdge in InEdges) {
             var temp = ((GpStateNode)inEdge);
             
@@ -86,23 +105,6 @@ public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction
                 uni.Substitute(ref tempLiteral);
             }
         }
-        
-        foreach (var preCon in GpAction.Preconditions) {
-            foreach (var uni in GpAction.Unificators) {
-                var tempPreCon = preCon;
-                uni.Substitute(ref tempPreCon);
-            }
-        }
-        
-        foreach (var effect in GpAction.Effects) {
-            foreach (var uni in GpAction.Unificators) {
-                var tempEffect = effect;
-                uni.Substitute(ref tempEffect);
-            }
-        }
-    }
-    
-    public void SpecifyBackward() {
 
     }
 }
