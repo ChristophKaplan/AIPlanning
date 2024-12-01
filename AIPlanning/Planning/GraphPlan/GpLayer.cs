@@ -8,6 +8,11 @@ public class GpLayer(int level) {
     public readonly List<GpStateNode> StateNodes = new();
     public readonly List<GpActionNode> ActionNodes = new();
 
+    public GpLayer(int level, List<GpStateNode> stateNodes, List<GpActionNode> actionNodes) : this(level) {
+        this.StateNodes = stateNodes;
+        this.ActionNodes = actionNodes;
+    }
+    
     public void TryAdd(GpNode gpNode) {
         switch (gpNode) {
             case GpStateNode stateNode: {
@@ -32,6 +37,18 @@ public class GpLayer(int level) {
             }
         }
     }
+    
+    private void RemoveAction(GpActionNode actionNode) {
+        foreach (var inNode in actionNode.InEdges) {
+            inNode.OutEdges.Remove(actionNode);
+        }
+        
+        foreach (var outNode in actionNode.OutEdges) {
+            outNode.InEdges.Remove(actionNode);
+        }
+        
+        ActionNodes.Remove(actionNode);
+    }
 
     private void MergeRelations(GpNode mergeFrom, GpNode mergeTo) {
         foreach (var inNode in mergeFrom.InEdges) {
@@ -53,7 +70,7 @@ public class GpLayer(int level) {
         return aSubsetB && bSubsetA;
     }
 
-    public void ExpandActionNodes(List<GpAction> actions) {
+    public void ExpandActionNodesFromState(List<GpAction> actions) {
 
         actions = actions.Select(action => new GpAction(action)).ToList();
         
@@ -74,8 +91,17 @@ public class GpLayer(int level) {
             TryAdd(actionNode);
         }
         
-        ActionNodes.ForEach(actionNode => actionNode.SpecifyForward());
+        ActionNodes.ForEach(n => n.GpAction.SpecifyPrecon());
+        /*
 
+        //remove inconsistent actions (?)
+        for (var i = ActionNodes.Count-1; i >= 0; i--) {
+            var cur = ActionNodes[i];
+            if (!cur.GpAction.IsConsistent()) {
+                RemoveAction(cur);
+            }
+        }*/
+        
         CheckMutexRelations(ActionNodes.Select(n => (GpNode)n).ToList());
     }
 
@@ -84,7 +110,7 @@ public class GpLayer(int level) {
         var newLayer = new GpLayer(newIndex);
         foreach (var actionNode in ActionNodes) {
             foreach (var effect in actionNode.GpAction.Effects) {
-                var effectNode = new GpStateNode(newIndex, effect);
+                var effectNode = new GpStateNode(effect);
                 actionNode.ConnectTo(effectNode);
                 newLayer.TryAdd(effectNode);
             }

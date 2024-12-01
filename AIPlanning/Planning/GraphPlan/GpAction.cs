@@ -1,4 +1,5 @@
 using FirstOrderLogic;
+using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
@@ -13,42 +14,92 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public string Signifier { get; } = name;
     public List<ISentence> Preconditions { get; } = preconditions;
     public List<ISentence> Effects { get; } = effects;
-
-    public List<Unificator> Unificators { get; } = new();
+    public List<Unificator> PreConUnificators { get; } = new();
+    public List<Unificator> EffectUnificators { get; } = new();
 
     public bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
-        satisfiedPreconditionNodes = [];
+        satisfiedPreconditionNodes = GetMatchingNodes(stateNodes, Preconditions);
+        
+        //precondition would be contradicting in this very action ???
+        //need to check if action woul dbecome inconsistent if unification applied
+        
+        return satisfiedPreconditionNodes != null;
+    }
 
-        foreach (var preCon in Preconditions) {
+    private List<GpNode> GetMatchingNodes(List<GpStateNode> stateNodes, List<ISentence> preconditions) {
+        var satisfiedPreconditionNodes = new List<GpNode>();
+
+        foreach (var preCon in preconditions) {
             var applicableNode = stateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
-            if (applicableNode == null) return false;
-            
+            if (applicableNode == null) {
+                
+                if (preCon.IsNegation) {
+                    Logger.Log($"Negation {preCon} not found in state");
+                    
+                    var isContainedPositivly = stateNodes.Any(sn => sn.Literal.Equals(preCon.Children[0]));
+                    if (!isContainedPositivly) {
+                        Logger.Log($"Negation {preCon} added to state");
+                        var negation = new GpStateNode(preCon);
+                        stateNodes.Add(negation);
+                        satisfiedPreconditionNodes.Add(negation);
+                    }
+
+                    continue;
+                }
+
+                return null;
+            }
+
             satisfiedPreconditionNodes.Add(applicableNode);
         }
 
-        return true;
+        return satisfiedPreconditionNodes;
+    }
 
-        bool ApplicableSingle(ISentence literal, ISentence preCon) {
-            var b = literal.Match(preCon, out var u);
-            Unificators.Add(u);
-            return b;
-            
-            if (literal.IsNegationOf(preCon, true)) {
-                return false;
+    private bool ApplicableSingle(ISentence literal, ISentence preCon) {
+        if (!literal.Match(preCon, out var unificator)) {
+            return false;
+        }
+
+        if (!unificator.IsEmpty) {
+            PreConUnificators.Add(unificator);
+        }
+        
+        return true;
+    }
+
+    public GpAction(GpAction action) : this(action.Signifier,
+        action.Preconditions.Select(p => p.Clone()).ToList(),
+        action.Effects.Select(e => e.Clone()).ToList()) {
+    }
+
+    public void SpecifyPrecon() {
+        //specification macht noch probleme, führt zu inkonsistenzen actions
+        if (PreConUnificators.Count > 1) {
+            //throw new Exception("Multiple unificators for preconditions ?");
+        }
+        
+        foreach (var preCon in Preconditions) {
+            foreach (var uni in PreConUnificators) {
+                var tempPreCon = preCon;
+                uni.Substitute(ref tempPreCon);
             }
-            
-            var unificator = new Unificator(preCon, literal);
-            var unify = unificator.IsUnifiable;
-            if (unify) Unificators.Add(unificator);
-            
-            return unify;
+        }
+
+        foreach (var effect in Effects) {
+            foreach (var uni in PreConUnificators) {
+                var tempEffect = effect;
+                uni.Substitute(ref tempEffect);
+            }
         }
     }
-    
-    public GpAction(GpAction action) : this(action.Signifier, 
-        action.Preconditions.Select(p => p.Clone()).ToList(), 
-        action.Effects.Select(e => e.Clone()).ToList()) { }
-    
+
+    public bool IsConsistent() {
+        var pre = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOf(p2)));
+        var eff = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOf(eff2)));
+        return !pre && !eff;
+    }
+
     public override string ToString() {
         return $"{Signifier} {string.Join(",", Preconditions)} -> {string.Join(",", Effects)}";
     }

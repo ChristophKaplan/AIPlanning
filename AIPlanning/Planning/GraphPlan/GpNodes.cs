@@ -1,9 +1,9 @@
 using FirstOrderLogic;
+using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
-public abstract class GpNode(int level) {
-    public int Level { get; } = level;
+public abstract class GpNode {
     public List<GpNode> InEdges { get; } = [];
     public List<GpNode> OutEdges { get; } = [];
     public List<GpNode> MutexRelation { get; } = [];
@@ -34,7 +34,7 @@ public abstract class GpNode(int level) {
     }
 }
 
-public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction) : GpNode(level) {
+public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction) : GpNode {
     private bool IsPersistenceAction { get; } = isPersistenceAction;
     public GpAction GpAction { get; } = gpAction;
 
@@ -48,7 +48,7 @@ public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction
 
     public override bool Equals(object? obj) {
         if (obj is GpActionNode actionNode) {
-            return Level.Equals(actionNode.Level) && GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
+            return GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
         }
 
         return false;
@@ -59,57 +59,21 @@ public class GpActionNode(int level, GpAction gpAction, bool isPersistenceAction
     }
 
     public bool IsInterference(GpActionNode other) {
-        return GpAction.Effects.Any(effect => other.GpAction.Preconditions.Any(otherPreCon => effect.IsNegationOf(otherPreCon))) ||
+        var b = GpAction.Effects.Any(effect => other.GpAction.Preconditions.Any(otherPreCon => effect.IsNegationOf(otherPreCon))) ||
                other.GpAction.Effects.Any(effect => GpAction.Preconditions.Any(preCon => effect.IsNegationOf(preCon)));
+        
+        if (b) {
+            //Logger.Log($"Interference: {GpAction} AND {other.GpAction}");
+        }
+        return b;
     }
 
     public bool IsConflictingNeeds(GpActionNode other) {
         return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
     }
-
-    public void SpecifyForward() {
-  
-
-    }
-    
-    public void SpecifyBackward() {
-
-        foreach (var preCon in GpAction.Preconditions) {
-            foreach (var uni in GpAction.Unificators) {
-                var tempPreCon = preCon;
-                uni.Substitute(ref tempPreCon);
-            }
-        }
-        
-        foreach (var effect in GpAction.Effects) {
-            foreach (var uni in GpAction.Unificators) {
-                var tempEffect = effect;
-                uni.Substitute(ref tempEffect);
-            }
-        }
-        
-        foreach (var inEdge in InEdges) {
-            var temp = ((GpStateNode)inEdge);
-            
-            foreach (var uni in GpAction.Unificators) {
-                var tempLiteral = temp.Literal;
-                uni.Substitute(ref tempLiteral);
-            }
-        }
-        
-        foreach (var outEdge in OutEdges) {
-            var temp = ((GpStateNode)outEdge);
-            
-            foreach (var uni in GpAction.Unificators) {
-                var tempLiteral = temp.Literal;
-                uni.Substitute(ref tempLiteral);
-            }
-        }
-
-    }
 }
 
-public class GpStateNode(int level, ISentence literal) : GpNode(level) {
+public class GpStateNode(ISentence literal) : GpNode {
     public ISentence Literal { get; } = literal;
 
     public override string ToString() {
@@ -122,7 +86,7 @@ public class GpStateNode(int level, ISentence literal) : GpNode(level) {
 
     public override bool Equals(object? obj) {
         if (obj is GpStateNode stateNode) {
-            return Level.Equals(stateNode.Level) && Literal.Equals(stateNode.Literal);
+            return Literal.Equals(stateNode.Literal);
         }
 
         return false;
@@ -133,6 +97,10 @@ public class GpStateNode(int level, ISentence literal) : GpNode(level) {
     }
 
     public bool IsInconsistentSupport(GpStateNode other) {
-        return InEdges.Any(inNode => other.InEdges.Any(inNode.IsMutex));
+        var isAPossibleWay = InEdges.Any(inNode => other.InEdges.Any(otherInNode => !inNode.IsMutex(otherInNode)));
+        if (!isAPossibleWay) {
+            //Logger.Log($"Inconsistent support: {Literal} {other.Literal}");
+        }
+        return !isAPossibleWay;
     }
 }
