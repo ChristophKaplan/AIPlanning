@@ -1,4 +1,3 @@
-using System.Text;
 using FirstOrderLogic;
 
 namespace AIPlanning.Planning.GraphPlan;
@@ -9,8 +8,8 @@ public class GpLayer(int level) {
     public readonly List<GpActionNode> ActionNodes = new();
 
     public GpLayer(int level, List<GpStateNode> stateNodes, List<GpActionNode> actionNodes) : this(level) {
-        this.StateNodes = stateNodes;
-        this.ActionNodes = actionNodes;
+        StateNodes = stateNodes;
+        ActionNodes = actionNodes;
     }
     
     public void TryAdd(GpNode gpNode) {
@@ -73,34 +72,24 @@ public class GpLayer(int level) {
     public void ExpandActionNodesFromState(List<GpAction> actions) {
 
         actions = actions.Select(action => new GpAction(action)).ToList();
-        
+
         foreach (var action in actions) {
             if (!action.IsApplicable(StateNodes, out var satisfiedPreconditions)) {
                 continue;
             }
-
-            var actionNode = new GpActionNode(Level, action, false);
+            
+            var actionNode = new GpActionNode(action, false);
+            
             satisfiedPreconditions.ForEach(preCon => preCon.ConnectTo(actionNode));
             TryAdd(actionNode);
         }
 
         foreach (var stateNode in StateNodes) {
             var action = new GpAction("Persist", new List<ISentence> { stateNode.Literal }, new List<ISentence> { stateNode.Literal });
-            var actionNode = new GpActionNode(Level, action, true);
+            var actionNode = new GpActionNode(action, true);
             stateNode.ConnectTo(actionNode);
             TryAdd(actionNode);
         }
-        
-        ActionNodes.ForEach(n => n.GpAction.SpecifyPrecon());
-        /*
-
-        //remove inconsistent actions (?)
-        for (var i = ActionNodes.Count-1; i >= 0; i--) {
-            var cur = ActionNodes[i];
-            if (!cur.GpAction.IsConsistent()) {
-                RemoveAction(cur);
-            }
-        }*/
         
         CheckMutexRelations(ActionNodes.Select(n => (GpNode)n).ToList());
     }
@@ -108,6 +97,7 @@ public class GpLayer(int level) {
     public GpLayer ExpandNextLayer() {
         var newIndex = Level + 1;
         var newLayer = new GpLayer(newIndex);
+        
         foreach (var actionNode in ActionNodes) {
             foreach (var effect in actionNode.GpAction.Effects) {
                 var effectNode = new GpStateNode(effect);

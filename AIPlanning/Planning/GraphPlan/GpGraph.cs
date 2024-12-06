@@ -15,7 +15,7 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         _layers.Add(0, initialLayer);
     }
 
-    private void Rekursion(int levelIndex, List<GpNode> currentState, NoGoods noGoods, Dictionary<int, GpLayer> outcome) {
+    private void Rekursion(int levelIndex, List<GpNode> currentState, NoGoods noGoods, Dictionary<int, GpLayer> outcome, List<Dictionary<int, GpLayer>> solutions) {
         if (currentState.Count == 0) {
             Logger.Log("State is empty?");
             return;
@@ -45,10 +45,11 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
                 
             if (levelIndex == 0) {
                 Logger.Log("Solution found");
+                solutions.Add(outcomeBranch);
                 return;
             }
                 
-            Rekursion(levelIndex - 1, possibleState, noGoods, outcomeBranch);
+            Rekursion(levelIndex - 1, possibleState, noGoods, outcomeBranch, solutions);
         }
         
         noGoods.Add(levelIndex, currentState);
@@ -61,23 +62,28 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         var state = GetConflictFreeStateFromGoals(stateNodes, goals);
         return state != null && state.Count == goals.Count;
     }
-
+    
     public Dictionary<int, List<GpAction>> ExtractSolution(int levelIndex, NoGoods noGoods) {
         Logger.Log($"Extracting solution for level {levelIndex}");
 
         var lastState = _layers[levelIndex].StateNodes;
         var currentState = GetConflictFreeStateFromGoals(lastState, goal);
-
-        Rekursion(levelIndex-1, currentState, noGoods, new Dictionary<int, GpLayer>());
-
+        
+        
+        var solutions = new List<Dictionary<int, GpLayer>>();
+        Rekursion(levelIndex-1, currentState, noGoods, new Dictionary<int, GpLayer>(), solutions);
+        
+        if (solutions.Count == 0) {
+            return null;
+        }
+        
+        var solutionLayers = solutions.First();
         var solution = new Dictionary<int, List<GpAction>>();
-
-        /*foreach (var solutionLayer in _solutionLayers.Reverse()) {
+        foreach (var solutionLayer in solutionLayers.Reverse()) {
             var actions = solutionLayer.Value.ActionNodes;
-            //actions.ForEach(a => a.GpAction.Specify());
             var step = solutionLayer.Key;
             solution.Add(step, actions.Select(n => n.GpAction).ToList());
-        }*/
+        }
 
         return solution;
     }
@@ -117,7 +123,7 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
 
     private List<GpNode> GetConflictFreeStateFromGoals(List<GpStateNode> state, List<ISentence> goals) {
         var reachedSubState = GetReachedSubState(state, goals);
-        return reachedSubState == null ? null : GetConflictFreeSubset(reachedSubState); //muss ja auch genau die goals haben oder?
+        return reachedSubState == null ? null : GetConflictFreeSubset(reachedSubState);
     }
 
     private List<GpNode> GetReachedSubState(List<GpStateNode> state, List<ISentence> goals) {
@@ -126,7 +132,7 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
             foreach (var stateNode in state) {
                 if (stateNode.Literal.Match(goal, out var unificator)) {
                     if (!unificator.IsEmpty) {
-                        stateNode.InEdges.ForEach(action => ((GpActionNode)action).GpAction.PreConUnificators.Add(unificator));
+                        stateNode.InEdges.ForEach(action => ((GpActionNode)action).GpAction.EffectUnificators.Add(unificator)); // this is rther the effect unificator
                     }
 
                     reachedSubState.Add(stateNode);

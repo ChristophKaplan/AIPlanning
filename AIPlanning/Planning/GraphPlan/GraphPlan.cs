@@ -56,6 +56,8 @@ public class GraphPlan {
 
             graph.ExpandGraph();
             levelIndex++;
+            
+            Logger.Log("\n\n"+graph.ToString());
         }
     }
 }

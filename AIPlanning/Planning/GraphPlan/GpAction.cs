@@ -19,10 +19,6 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
 
     public bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
         satisfiedPreconditionNodes = GetMatchingNodes(stateNodes, Preconditions);
-        
-        //precondition would be contradicting in this very action ???
-        //need to check if action woul dbecome inconsistent if unification applied
-        
         return satisfiedPreconditionNodes != null;
     }
 
@@ -53,7 +49,7 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
             satisfiedPreconditionNodes.Add(applicableNode);
         }
 
-        return satisfiedPreconditionNodes;
+        return satisfiedPreconditionNodes.Distinct().ToList();
     }
 
     private bool ApplicableSingle(ISentence literal, ISentence preCon) {
@@ -72,12 +68,9 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
         action.Preconditions.Select(p => p.Clone()).ToList(),
         action.Effects.Select(e => e.Clone()).ToList()) {
     }
-
-    public void SpecifyPrecon() {
+    
+    /*public void SpecifyPrecon() {
         //specification macht noch probleme, führt zu inkonsistenzen actions
-        if (PreConUnificators.Count > 1) {
-            //throw new Exception("Multiple unificators for preconditions ?");
-        }
         
         foreach (var preCon in Preconditions) {
             foreach (var uni in PreConUnificators) {
@@ -92,12 +85,50 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
                 uni.Substitute(ref tempEffect);
             }
         }
+    }*/
+    
+    public void SpecifyEffects() {
+        //specification macht noch probleme, führt zu inkonsistenzen actions
+        if (PreConUnificators.Count > 1) {
+            //throw new Exception("Multiple unificators for preconditions ?");
+        }
+        
+        foreach (var preCon in Preconditions) {
+            foreach (var uni in EffectUnificators) {
+                var tempPreCon = preCon;
+                uni.Substitute(ref tempPreCon);
+            }
+        }
+
+        foreach (var effect in Effects) {
+            foreach (var uni in EffectUnificators) {
+                var tempEffect = effect;
+                uni.Substitute(ref tempEffect);
+            }
+        }
     }
+    
+    public void SpecifyEffects_REVERSE() {
+        foreach (var preCon in Preconditions) {
+            foreach (var uni in EffectUnificators) {
+                var tempPreCon = preCon;
+                uni.SubstituteReverse(ref tempPreCon);
+            }
+        }
+
+        foreach (var effect in Effects) {
+            foreach (var uni in EffectUnificators) {
+                var tempEffect = effect;
+                uni.SubstituteReverse(ref tempEffect);
+            }
+        }
+    }
+    
 
     public bool IsConsistent() {
         var pre = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOf(p2)));
         var eff = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOf(eff2)));
-        return !pre && !eff;
+        return !(pre || eff);
     }
 
     public override string ToString() {
