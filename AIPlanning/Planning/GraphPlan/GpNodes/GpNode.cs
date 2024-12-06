@@ -10,6 +10,20 @@ public abstract class GpNode {
         connectToMe.InEdges.Add(this);
     }
 
+    public void MergeRelations(GpNode mergeTo) {
+        foreach (var inNode in InEdges) {
+            mergeTo.InEdges.Add(inNode);
+        }
+
+        foreach (var outNode in OutEdges) {
+            mergeTo.OutEdges.Add(outNode);
+        }
+
+        foreach (var mutexNode in MutexRelation) {
+            mergeTo.MutexRelation.Add(mutexNode);
+        }
+    }
+    
     public bool IsMutex(GpNode other) {
         if (Equals(other)) return false;
 

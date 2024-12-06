@@ -4,77 +4,32 @@ namespace AIPlanning.Planning.GraphPlan;
 
 public class GpLayer(int level) {
     public readonly int Level = level;
-    public readonly List<GpStateNode> StateNodes = new();
-    public readonly List<GpActionNode> ActionNodes = new();
+    public readonly BeliefState BeliefState = new();
+    public readonly ActionSet ActionSet = new();
 
-    public GpLayer(int level, List<GpStateNode> stateNodes, List<GpActionNode> actionNodes) : this(level) {
-        StateNodes = stateNodes;
-        ActionNodes = actionNodes;
+    public GpLayer(int level, BeliefState beliefState, ActionSet actionSet) : this(level) {
+        BeliefState = beliefState;
+        ActionSet = actionSet;
     }
     
     public void TryAdd(GpNode gpNode) {
         switch (gpNode) {
             case GpStateNode stateNode: {
-                var contained = StateNodes.FirstOrDefault(gpNode.Equals);
-                if (contained != null) {
-                    MergeRelations(gpNode, contained);
-                    return;
-                }
-
-                StateNodes.Add(stateNode);
+                BeliefState.TryAdd(stateNode);
                 break;
             }
             case GpActionNode actionNode: {
-                var contained = ActionNodes.FirstOrDefault(gpNode.Equals);
-                if (contained != null) {
-                    MergeRelations(gpNode, contained);
-                    return;
-                }
-
-                ActionNodes.Add(actionNode);
+                ActionSet.TryAdd(actionNode);
                 break;
             }
         }
     }
     
-    private void RemoveAction(GpActionNode actionNode) {
-        foreach (var inNode in actionNode.InEdges) {
-            inNode.OutEdges.Remove(actionNode);
-        }
-        
-        foreach (var outNode in actionNode.OutEdges) {
-            outNode.InEdges.Remove(actionNode);
-        }
-        
-        ActionNodes.Remove(actionNode);
-    }
-
-    private void MergeRelations(GpNode mergeFrom, GpNode mergeTo) {
-        foreach (var inNode in mergeFrom.InEdges) {
-            mergeTo.InEdges.Add(inNode);
-        }
-
-        foreach (var outNode in mergeFrom.OutEdges) {
-            mergeTo.OutEdges.Add(outNode);
-        }
-
-        foreach (var mutexNode in mergeFrom.MutexRelation) {
-            mergeTo.MutexRelation.Add(mutexNode);
-        }
-    }
-
-    public bool EqualStateLiterals(GpLayer other) {
-        var aSubsetB = StateNodes.All(a => other.StateNodes.Any(a.EqualLiteral));
-        var bSubsetA = other.StateNodes.All(b => StateNodes.Any(b.EqualLiteral));
-        return aSubsetB && bSubsetA;
-    }
-
     public void ExpandActionNodesFromState(List<GpAction> actions) {
+        var actionInstances = actions.Select(action => new GpAction(action)).ToList();
 
-        actions = actions.Select(action => new GpAction(action)).ToList();
-
-        foreach (var action in actions) {
-            if (!action.IsApplicable(StateNodes, out var satisfiedPreconditions)) {
+        foreach (var action in actionInstances) {
+            if (!action.IsApplicable(BeliefState, out var satisfiedPreconditions)) {
                 continue;
             }
             
@@ -84,21 +39,21 @@ public class GpLayer(int level) {
             TryAdd(actionNode);
         }
 
-        foreach (var stateNode in StateNodes) {
+        foreach (var stateNode in BeliefState.GetStateNodes) {
             var action = new GpAction("Persist", new List<ISentence> { stateNode.Literal }, new List<ISentence> { stateNode.Literal });
             var actionNode = new GpActionNode(action, true);
             stateNode.ConnectTo(actionNode);
             TryAdd(actionNode);
         }
         
-        CheckMutexRelations(ActionNodes.Select(n => (GpNode)n).ToList());
+        ActionSet.GetNodes.CheckMutexRelations();
     }
 
     public GpLayer ExpandNextLayer() {
         var newIndex = Level + 1;
         var newLayer = new GpLayer(newIndex);
         
-        foreach (var actionNode in ActionNodes) {
+        foreach (var actionNode in ActionSet.GetActionNodes) {
             foreach (var effect in actionNode.GpAction.Effects) {
                 var effectNode = new GpStateNode(effect);
                 actionNode.ConnectTo(effectNode);
@@ -106,30 +61,18 @@ public class GpLayer(int level) {
             }
         }
 
-        CheckMutexRelations(newLayer.StateNodes.Select(n => (GpNode)n).ToList());
+        newLayer.BeliefState.GetNodes.CheckMutexRelations();
         return newLayer;
-    }
-
-    private void CheckMutexRelations(List<GpNode> nodes) {
-        for (var i = 0; i < nodes.Count; i++) {
-            for (var j = i + 1; j < nodes.Count; j++) {
-                var nodeA = nodes[i];
-                var nodeB = nodes[j];
-                if (!nodeA.Equals(nodeB) && nodeA.IsMutex(nodeB)) {
-                    nodeA.TryAddMutexRelations(nodeB);
-                }
-            }
-        }
     }
 
     public override string ToString() {
         string output = $"Layer: {Level}\n";
         
-        foreach (var stateNode in StateNodes) {
+        foreach (var stateNode in BeliefState.GetStateNodes) {
             output += stateNode.ToString() + "\n";
         }
         output +=  "\n";
-        foreach (var actionNode in ActionNodes) {
+        foreach (var actionNode in ActionSet.GetActionNodes) {
             output += actionNode.ToString() + "\n";
         }
         output +=  "\n";

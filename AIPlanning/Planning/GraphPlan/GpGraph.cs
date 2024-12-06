@@ -15,30 +15,58 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         _layers.Add(0, initialLayer);
     }
 
-    private void Rekursion(int levelIndex, List<GpNode> currentState, NoGoods noGoods, Dictionary<int, GpLayer> outcome, List<Dictionary<int, GpLayer>> solutions) {
-        if (currentState.Count == 0) {
+    public bool StateNotMutex(int i, List<ISentence> goals) {
+        var stateNodes = _layers[i].BeliefState;
+        var state = stateNodes.GetConflictFreeStateFromGoals(goals);
+        return state != null && state.GetNodes.Count == goals.Count;
+    }
+    
+    public Dictionary<int, ActionSet> ExtractSolution(int levelIndex, NoGoods noGoods) {
+        Logger.Log($"Extracting solution for level {levelIndex}");
+
+        var lastState = _layers[levelIndex].BeliefState;
+        var currentState = lastState.GetConflictFreeStateFromGoals(goal);
+        
+        var solutions = new List<Dictionary<int, GpLayer>>();
+        FindSolutions(levelIndex-1, currentState, noGoods, new Dictionary<int, GpLayer>(), solutions);
+        
+        if (solutions.Count == 0) {
+            return null;
+        }
+        
+        var solutionLayers = solutions.First();
+        var solution = new Dictionary<int, ActionSet>();
+        foreach (var solutionLayer in solutionLayers.Reverse()) {
+            var actions = solutionLayer.Value.ActionSet;
+            var step = solutionLayer.Key;
+            solution.Add(step, actions);
+        }
+
+        return solution;
+    }
+
+    private void FindSolutions(int levelIndex, BeliefState curBeliefState, NoGoods noGoods, Dictionary<int, GpLayer> outcome, List<Dictionary<int, GpLayer>> solutions) {
+        if (curBeliefState.GetNodes.Count == 0) {
             Logger.Log("State is empty?");
             return;
         }
 
-        var currentPossibleActionSets = GetConflictFreeSubsetsOfIncomingActionNodes(currentState);
+        var currentPossibleActionSets = curBeliefState.GetCFIncomingActions();
 
         if (currentPossibleActionSets.Count == 0) {
-            noGoods.Add(levelIndex, currentState);
+            noGoods.Add(levelIndex, curBeliefState);
             Logger.Log("No possible actions found");
             return;
         }
 
         foreach (var possibleActions in currentPossibleActionSets) {
-            var possibleState = GetConflictFreeSubsetOfIncomingNodes(possibleActions);
+            var possibleState = possibleActions.GetCFIncomingState();
 
-            if (possibleState is not { Count: > 0 }) {
+            if (possibleState.GetNodes is not { Count: > 0 }) {
                 continue;
             }
 
-            var possibleLayer = new GpLayer(levelIndex,
-                possibleState.Select(n => (GpStateNode)n).ToList(),
-                possibleActions.Select(n => (GpActionNode)n).ToList());
+            var possibleLayer = new GpLayer(levelIndex, possibleState, possibleActions);
 
             var outcomeBranch = new Dictionary<int, GpLayer>(outcome);
             outcomeBranch.Add(levelIndex, possibleLayer);
@@ -49,107 +77,15 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
                 return;
             }
                 
-            Rekursion(levelIndex - 1, possibleState, noGoods, outcomeBranch, solutions);
+            FindSolutions(levelIndex - 1, possibleState, noGoods, outcomeBranch, solutions);
         }
         
-        noGoods.Add(levelIndex, currentState);
+        noGoods.Add(levelIndex, curBeliefState);
         Logger.Log("No states found");
     }
-
-
-    public bool StateNotMutex(int i, List<ISentence> goals) {
-        var stateNodes = _layers[i].StateNodes;
-        var state = GetConflictFreeStateFromGoals(stateNodes, goals);
-        return state != null && state.Count == goals.Count;
-    }
     
-    public Dictionary<int, List<GpAction>> ExtractSolution(int levelIndex, NoGoods noGoods) {
-        Logger.Log($"Extracting solution for level {levelIndex}");
-
-        var lastState = _layers[levelIndex].StateNodes;
-        var currentState = GetConflictFreeStateFromGoals(lastState, goal);
-        
-        
-        var solutions = new List<Dictionary<int, GpLayer>>();
-        Rekursion(levelIndex-1, currentState, noGoods, new Dictionary<int, GpLayer>(), solutions);
-        
-        if (solutions.Count == 0) {
-            return null;
-        }
-        
-        var solutionLayers = solutions.First();
-        var solution = new Dictionary<int, List<GpAction>>();
-        foreach (var solutionLayer in solutionLayers.Reverse()) {
-            var actions = solutionLayer.Value.ActionNodes;
-            var step = solutionLayer.Key;
-            solution.Add(step, actions.Select(n => n.GpAction).ToList());
-        }
-
-        return solution;
-    }
-
-    private List<List<GpNode>> GetConflictFreeSubsetsOfIncomingActionNodes(List<GpNode> stateNodes) {
-        var listOfInEdgesActionLists = stateNodes.Select(stateNode => stateNode.InEdges).ToList();
-
-        foreach (var inEdgesActionList in listOfInEdgesActionLists) {
-            var inconsistentActions = inEdgesActionList.Where(actionNode => !((GpActionNode)actionNode).GpAction.IsConsistent()).ToArray();
-            for (var i = inconsistentActions.Length - 1; i >= 0; i--) {
-                inEdgesActionList.Remove(inconsistentActions[i]);
-            }
-        }
-
-        var combinationOfEachActionPerInEdges = Combinations.GetCombinations(listOfInEdgesActionLists).Select(c => c.Distinct().ToList()).ToList();
-
-        var possibleActions = new List<List<GpNode>>();
-        foreach (var combinedActionNodes in combinationOfEachActionPerInEdges) {
-            if (combinedActionNodes.Count == 0) {
-                continue;
-            }
-
-            bool isConflict = combinedActionNodes.Any(actionNode => actionNode.MutexRelation.Any(combinedActionNodes.Contains));
-            if (!isConflict) {
-                possibleActions.Add(combinedActionNodes);
-            }
-        }
-
-        return possibleActions;
-    }
-
-
-    private List<GpNode> GetConflictFreeSubsetOfIncomingNodes(List<GpNode> nodes) {
-        var incomingNodes = nodes.SelectMany(node => node.InEdges).Distinct().ToList();
-        return GetConflictFreeSubset(incomingNodes);
-    }
-
-    private List<GpNode> GetConflictFreeStateFromGoals(List<GpStateNode> state, List<ISentence> goals) {
-        var reachedSubState = GetReachedSubState(state, goals);
-        return reachedSubState == null ? null : GetConflictFreeSubset(reachedSubState);
-    }
-
-    private List<GpNode> GetReachedSubState(List<GpStateNode> state, List<ISentence> goals) {
-        var reachedSubState = new List<GpNode>();
-        foreach (var goal in goals) {
-            foreach (var stateNode in state) {
-                if (stateNode.Literal.Match(goal, out var unificator)) {
-                    if (!unificator.IsEmpty) {
-                        stateNode.InEdges.ForEach(action => ((GpActionNode)action).GpAction.EffectUnificators.Add(unificator)); // this is rther the effect unificator
-                    }
-
-                    reachedSubState.Add(stateNode);
-                }
-            }
-        }
-
-        var isReached = reachedSubState.Count == goals.Count;
-        return isReached ? reachedSubState : null;
-    }
-
-    private List<GpNode> GetConflictFreeSubset(List<GpNode> nodes) {
-        return nodes.Where(actionNode => !actionNode.MutexRelation.Any(nodes.Contains)).ToList();
-    }
-
     public bool Stable(int levelIndex) {
-        return _layers.Count >= 2 && _layers[levelIndex].EqualStateLiterals(_layers[levelIndex - 1]);
+        return _layers.Count >= 2 && _layers[levelIndex].BeliefState.EqualStateLiterals(_layers[levelIndex - 1].BeliefState);
     }
 
     public void ExpandGraph() {
@@ -166,18 +102,5 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
         }
 
         return output;
-    }
-}
-
-public static class Combinations {
-    public static List<List<T>> GetCombinations<T>(List<List<T>> lists) {
-        var c = lists.CartesianProduct().Select(l => l.ToList()).ToList();
-        return c;
-    }
-
-    static IEnumerable<IEnumerable<T>> CartesianProduct<T>(this IEnumerable<IEnumerable<T>> sequences) {
-        IEnumerable<IEnumerable<T>> emptyProduct = [[]];
-        return sequences.Aggregate(emptyProduct,
-            (accumulator, sequence) => from accseq in accumulator from item in sequence select accseq.Concat([item]));
     }
 }

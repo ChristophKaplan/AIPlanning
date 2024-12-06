@@ -7,7 +7,7 @@ public interface IGpAction {
     string Signifier { get; }
     List<ISentence> Preconditions { get; }
     List<ISentence> Effects { get; }
-    bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes);
+    bool IsApplicable(BeliefState stateNodes, out List<GpNode> satisfiedPreconditionNodes);
 }
 
 public class GpAction(string name, List<ISentence> preconditions, List<ISentence> effects) : IGpAction {
@@ -17,26 +17,26 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public List<Unificator> PreConUnificators { get; } = new();
     public List<Unificator> EffectUnificators { get; } = new();
 
-    public bool IsApplicable(List<GpStateNode> stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
+    public bool IsApplicable(BeliefState stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
         satisfiedPreconditionNodes = GetMatchingNodes(stateNodes, Preconditions);
         return satisfiedPreconditionNodes != null;
     }
 
-    private List<GpNode> GetMatchingNodes(List<GpStateNode> stateNodes, List<ISentence> preconditions) {
+    private List<GpNode> GetMatchingNodes(BeliefState beliefState, List<ISentence> preconditions) {
         var satisfiedPreconditionNodes = new List<GpNode>();
 
         foreach (var preCon in preconditions) {
-            var applicableNode = stateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
+            var applicableNode = beliefState.GetStateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
             if (applicableNode == null) {
                 
                 if (preCon.IsNegation) {
                     Logger.Log($"Negation {preCon} not found in state");
                     
-                    var isContainedPositivly = stateNodes.Any(sn => sn.Literal.Equals(preCon.Children[0]));
+                    var isContainedPositivly = beliefState.GetStateNodes.Any(sn => sn.Literal.Equals(preCon.Children[0]));
                     if (!isContainedPositivly) {
                         Logger.Log($"Negation {preCon} added to state");
                         var negation = new GpStateNode(preCon);
-                        stateNodes.Add(negation);
+                        beliefState.GetStateNodes.Add(negation);
                         satisfiedPreconditionNodes.Add(negation);
                     }
 
