@@ -4,14 +4,14 @@ namespace AIPlanning.Planning.GraphPlan;
 
 public class GpLayer(int level) {
     public readonly int Level = level;
-    public readonly BeliefState BeliefState = new();
+    public BeliefState BeliefState = new();
     public readonly ActionSet ActionSet = new();
 
     public GpLayer(int level, BeliefState beliefState, ActionSet actionSet) : this(level) {
         BeliefState = beliefState;
         ActionSet = actionSet;
     }
-    
+
     public void TryAdd(GpNode gpNode) {
         switch (gpNode) {
             case GpStateNode stateNode: {
@@ -24,18 +24,26 @@ public class GpLayer(int level) {
             }
         }
     }
-    
-    public void ExpandActionNodesFromState(List<GpAction> actions) {
-        var actionInstances = actions.Select(action => new GpAction(action)).ToList();
 
-        foreach (var action in actionInstances) {
-            if (!action.IsApplicable(BeliefState, out var satisfiedPreconditions)) {
+    public List<GpAction> GetUsableActions(OperatorGraph operatorGraph) {
+        List<GpAction> usableActions = new();
+        foreach (var node in BeliefState.GetStateNodes) {
+            var literal = node.Literal;
+            var possibleActionsFor = operatorGraph.GetPossibleActionsFor(literal);
+            usableActions.AddRange(possibleActionsFor);
+        }
+
+        return usableActions;
+    }
+
+    public void ExpandActions(List<GpAction> actions) {
+        foreach (var action in actions) {
+            if (!action.IsApplicableToPreconditions(BeliefState, out var satisfiedPreCons)) {
                 continue;
             }
-            
-            var actionNode = new GpActionNode(action, false);
-            
-            satisfiedPreconditions.ForEach(preCon => preCon.ConnectTo(actionNode));
+
+            var actionNode = new GpActionNode(action);
+            satisfiedPreCons.ForEach(s => s.ConnectTo(actionNode));
             TryAdd(actionNode);
         }
 
@@ -45,37 +53,29 @@ public class GpLayer(int level) {
             stateNode.ConnectTo(actionNode);
             TryAdd(actionNode);
         }
-        
-        ActionSet.GetNodes.CheckMutexRelations();
     }
 
-    public GpLayer ExpandNextLayer() {
-        var newIndex = Level + 1;
-        var newLayer = new GpLayer(newIndex);
-        
-        foreach (var actionNode in ActionSet.GetActionNodes) {
-            foreach (var effect in actionNode.GpAction.Effects) {
-                var effectNode = new GpStateNode(effect);
-                actionNode.ConnectTo(effectNode);
-                newLayer.TryAdd(effectNode);
-            }
-        }
-
-        newLayer.BeliefState.GetNodes.CheckMutexRelations();
-        return newLayer;
+    public GpLayer ExpandLayer() {
+        var index = Level + 1;
+        var nextLayer = new GpLayer(index);
+        nextLayer.BeliefState = ActionSet.ExpandBeliefState();
+        nextLayer.BeliefState.GetNodes.CheckMutexRelations();
+        return nextLayer;
     }
 
     public override string ToString() {
         string output = $"Layer: {Level}\n";
-        
+
         foreach (var stateNode in BeliefState.GetStateNodes) {
             output += stateNode.ToString() + "\n";
         }
-        output +=  "\n";
+
+        output += "\n";
         foreach (var actionNode in ActionSet.GetActionNodes) {
             output += actionNode.ToString() + "\n";
         }
-        output +=  "\n";
+
+        output += "\n";
         return output;
     }
 }

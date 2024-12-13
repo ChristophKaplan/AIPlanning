@@ -4,10 +4,10 @@ namespace AIPlanning.Planning.GraphPlan;
 
 
 public class GpStateNode(ISentence literal) : GpNode {
-    public ISentence Literal { get; } = literal;
+    public ISentence Literal { get; set; } = literal;
 
     public override string ToString() {
-        return $"{Literal} [m:{MutexRelation.Count}]";
+        return $"{Literal} [m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m}, ")}]";
     }
 
     public override int GetHashCode() {
@@ -27,10 +27,11 @@ public class GpStateNode(ISentence literal) : GpNode {
     }
 
     public bool IsInconsistentSupport(GpStateNode other) {
-        var isAPossibleWay = InEdges.Any(inNode => other.InEdges.Any(otherInNode => !inNode.IsMutex(otherInNode)));
-        if (!isAPossibleWay) {
-            //Logger.Log($"Inconsistent support: {Literal} {other.Literal}");
+        if (InEdges.Count == 0 || other.InEdges.Count == 0) {
+            return false;
         }
+        
+        var isAPossibleWay = InEdges.Any(inNode => other.InEdges.Any(otherInNode => inNode.GetMutexType(otherInNode) == MutexType.None));
         return !isAPossibleWay;
     }
 }

@@ -7,127 +7,71 @@ public interface IGpAction {
     string Signifier { get; }
     List<ISentence> Preconditions { get; }
     List<ISentence> Effects { get; }
-    bool IsApplicable(BeliefState stateNodes, out List<GpNode> satisfiedPreconditionNodes);
+    bool IsApplicableToPreconditions(BeliefState beliefState, out List<GpNode> satisfied);
 }
 
 public class GpAction(string name, List<ISentence> preconditions, List<ISentence> effects) : IGpAction {
     public string Signifier { get; } = name;
     public List<ISentence> Preconditions { get; } = preconditions;
     public List<ISentence> Effects { get; } = effects;
-    public List<Unificator> PreConUnificators { get; } = new();
-    public List<Unificator> EffectUnificators { get; } = new();
 
-    public bool IsApplicable(BeliefState stateNodes, out List<GpNode> satisfiedPreconditionNodes) {
-        satisfiedPreconditionNodes = GetMatchingNodes(stateNodes, Preconditions);
-        return satisfiedPreconditionNodes != null;
+    public List<Unificator> Unificators { get; set; } = new();
+    public bool IsSpecified;
+
+    public bool IsApplicableToPreconditions(BeliefState beliefState, out List<GpNode> satisfied) {
+        satisfied = beliefState.GetSubBeliefStateMatchingTo(Preconditions);
+        return satisfied != null && satisfied.Count == Preconditions.Count; 
     }
-
-    private List<GpNode> GetMatchingNodes(BeliefState beliefState, List<ISentence> preconditions) {
-        var satisfiedPreconditionNodes = new List<GpNode>();
-
-        foreach (var preCon in preconditions) {
-            var applicableNode = beliefState.GetStateNodes.FirstOrDefault(node => ApplicableSingle(node.Literal, preCon));
-            if (applicableNode == null) {
-                
-                if (preCon.IsNegation) {
-                    Logger.Log($"Negation {preCon} not found in state");
-                    
-                    var isContainedPositivly = beliefState.GetStateNodes.Any(sn => sn.Literal.Equals(preCon.Children[0]));
-                    if (!isContainedPositivly) {
-                        Logger.Log($"Negation {preCon} added to state");
-                        var negation = new GpStateNode(preCon);
-                        beliefState.GetStateNodes.Add(negation);
-                        satisfiedPreconditionNodes.Add(negation);
-                    }
-
-                    continue;
-                }
-
-                return null;
-            }
-
-            satisfiedPreconditionNodes.Add(applicableNode);
-        }
-
-        return satisfiedPreconditionNodes.Distinct().ToList();
-    }
-
-    private bool ApplicableSingle(ISentence literal, ISentence preCon) {
-        if (!literal.Match(preCon, out var unificator)) {
-            return false;
-        }
-
-        if (!unificator.IsEmpty) {
-            PreConUnificators.Add(unificator);
-        }
-        
-        return true;
-    }
-
+    
     public GpAction(GpAction action) : this(action.Signifier,
         action.Preconditions.Select(p => p.Clone()).ToList(),
         action.Effects.Select(e => e.Clone()).ToList()) {
+        IsSpecified = action.IsSpecified;
     }
-    
-    /*public void SpecifyPrecon() {
-        //specification macht noch probleme, führt zu inkonsistenzen actions
-        
+
+    public void SpecifyAction(Unificator unificator) {
         foreach (var preCon in Preconditions) {
-            foreach (var uni in PreConUnificators) {
-                var tempPreCon = preCon;
-                uni.Substitute(ref tempPreCon);
-            }
+            var tempPreCon = preCon;
+            unificator.Substitute(ref tempPreCon);
         }
 
         foreach (var effect in Effects) {
-            foreach (var uni in PreConUnificators) {
-                var tempEffect = effect;
-                uni.Substitute(ref tempEffect);
-            }
-        }
-    }*/
-    
-    public void SpecifyEffects() {
-        //specification macht noch probleme, führt zu inkonsistenzen actions
-        if (PreConUnificators.Count > 1) {
-            //throw new Exception("Multiple unificators for preconditions ?");
+            var tempEffect = effect;
+            unificator.Substitute(ref tempEffect);
         }
         
+        IsSpecified = true;
+    }
+
+    public bool ContainsVariable() {
         foreach (var preCon in Preconditions) {
-            foreach (var uni in EffectUnificators) {
-                var tempPreCon = preCon;
-                uni.Substitute(ref tempPreCon);
+            var anyVar = preCon.GetPredicate().Terms.Any(t => t is Variable);
+            if (anyVar) {
+                return true;
             }
         }
 
         foreach (var effect in Effects) {
-            foreach (var uni in EffectUnificators) {
-                var tempEffect = effect;
-                uni.Substitute(ref tempEffect);
+            var anyVar = effect.GetPredicate().Terms.Any(t => t is Variable);
+            if (anyVar) {
+                return true;
             }
         }
+        
+        return false;
     }
-    
-    public void SpecifyEffects_REVERSE() {
-        foreach (var preCon in Preconditions) {
-            foreach (var uni in EffectUnificators) {
-                var tempPreCon = preCon;
-                uni.SubstituteReverse(ref tempPreCon);
-            }
-        }
 
-        foreach (var effect in Effects) {
-            foreach (var uni in EffectUnificators) {
-                var tempEffect = effect;
-                uni.SubstituteReverse(ref tempEffect);
-            }
-        }
-    }
-    
+    public bool IsConsistent(bool inMatchedTerms = false) {
+        if (inMatchedTerms) {
+            var prem = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOfAndMatch(p2, out _)));
+            var effm = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOfAndMatch(eff2, out _)));
 
-    public bool IsConsistent() {
+            return !(prem || effm);
+        }
+        
         var pre = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOf(p2)));
         var eff = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOf(eff2)));
+
         return !(pre || eff);
     }
 
@@ -141,5 +85,9 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
 
     public override bool Equals(object? obj) {
         return ToString().Equals(obj.ToString());
+    }
+
+    public GpAction Clone() {
+        return new GpAction(this);
     }
 }

@@ -10,7 +10,7 @@ public class NoGoods {
             return;
         }
         
-        throw new Exception("NoGoods already contains a belief state for this level");
+        //throw new Exception("NoGoods already contains a belief state for this level");
     }
     
     public bool IsStable() {

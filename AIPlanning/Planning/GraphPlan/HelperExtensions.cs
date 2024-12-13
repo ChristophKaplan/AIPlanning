@@ -10,10 +10,33 @@ public static class HelperExtensions {
         }
 
         var temp = new Unificator(other, sentence);
-        var unify = temp.IsUnifiable;
-        if (unify) unificator = temp;
+        var isUnifiable = temp.IsUnifiable;
+        if (isUnifiable) unificator = temp;
 
-        return unify;
+        return isUnifiable;
+    }
+
+    public static bool IsNegationOfAndMatch(this ISentence sentence, ISentence other, out Unificator unificator) {
+        unificator = null;
+        if (!sentence.IsNegationOf(other, true)) {
+            return false;
+        }
+        
+        var temp = new Unificator(other, sentence);
+        var isUnifiable = temp.IsUnifiable;
+        if (isUnifiable) unificator = temp;
+        
+        return isUnifiable;
+    }
+    
+    public static List<GpNode> GetConflictFreeSubset(this List<GpNode> nodes) {
+        var conflictFree = nodes.Where(node => !node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.Node))).ToList();
+        return conflictFree;
+    }
+    
+    public static bool IsConflictFree(this List<GpNode> nodes) {
+        bool isConflict = nodes.Any(node => node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.Node)));
+        return isConflict;
     }
     
     public static  void CheckMutexRelations(this List<GpNode> nodes) {
@@ -21,8 +44,11 @@ public static class HelperExtensions {
             for (var j = i + 1; j < nodes.Count; j++) {
                 var nodeA = nodes[i];
                 var nodeB = nodes[j];
-                if (!nodeA.Equals(nodeB) && nodeA.IsMutex(nodeB)) {
-                    nodeA.TryAddMutexRelations(nodeB);
+                if (!nodeA.Equals(nodeB)) {
+                    var mutexType = nodeA.GetMutexType(nodeB);
+                    if (mutexType != MutexType.None) {
+                        nodeA.TryAddMutexRelations(nodeB, mutexType);
+                    }
                 }
             }
         }

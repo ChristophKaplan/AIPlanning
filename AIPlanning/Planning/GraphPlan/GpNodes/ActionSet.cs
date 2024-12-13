@@ -1,3 +1,6 @@
+using FirstOrderLogic;
+using Helpers;
+
 namespace AIPlanning.Planning.GraphPlan;
 
 public class ActionSet{
@@ -5,7 +8,7 @@ public class ActionSet{
     
     public List<GpNode> GetNodes => nodes.Select(n => (GpNode)n).ToList();
     public List<GpActionNode> GetActionNodes => nodes;
-    
+
     public ActionSet() { }
     
     public ActionSet(List<GpNode> combinedActionNodes) {
@@ -24,8 +27,28 @@ public class ActionSet{
     
     public BeliefState GetCFIncomingState() {
         var incomingNodes = nodes.SelectMany(node => node.InEdges).Distinct().ToList();
-        var conflictFree = incomingNodes.Where(n => !n.MutexRelation.Any(incomingNodes.Contains)).ToList();
+        incomingNodes.CheckMutexRelations();
+        var conflictFree = incomingNodes.GetConflictFreeSubset();
+        
+        if(conflictFree.Count == 0) {
+            Logger.Log($"Empty state for: {incomingNodes.Aggregate("", (s, n) => s + n + "\n")}");
+        }
+        
         return new BeliefState(conflictFree);
+    }
+    
+    public BeliefState ExpandBeliefState() {
+        var beliefState = new BeliefState();
+        foreach (var actionNode in nodes) {
+            var list = actionNode.GpAction.Effects;
+            foreach (var effect in list) {
+                var stateNode = new GpStateNode(effect);
+                actionNode.ConnectTo(stateNode);
+                beliefState.TryAdd(stateNode);
+            }
+        }
+        
+        return beliefState;
     }
     
     public override int GetHashCode() {
@@ -43,5 +66,15 @@ public class ActionSet{
         }
         
         return nodes.SequenceEqual(((ActionSet)obj).nodes);
+    }
+    
+    public override string ToString() {
+        var output = "ActionSet:\n";
+        
+        foreach (var node in nodes) {
+            output += $"\t{node}\n";
+        }
+        
+        return output;
     }
 }

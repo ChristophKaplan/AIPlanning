@@ -1,12 +1,12 @@
 namespace AIPlanning.Planning.GraphPlan;
 
-
-public class GpActionNode(GpAction gpAction, bool isPersistenceAction) : GpNode {
+public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) : GpNode {
+    public int useCount = 0;
     private bool IsPersistenceAction { get; } = isPersistenceAction;
     public GpAction GpAction { get; } = gpAction;
 
     public override string ToString() {
-        return $"{GpAction.ToString()} [m:{MutexRelation.Count}]";
+        return $"{GpAction} [m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m}, ")}]";
     }
 
     public override int GetHashCode() {
@@ -34,22 +34,4 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction) : GpNode 
     public bool IsConflictingNeeds(GpActionNode other) {
         return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
     }
-    
-    /*public void SpecifyPrecon() {
-        //GpAction.SpecifyPrecon();
-
-        foreach (var node in InEdges) {
-            foreach (var uni in GpAction.PreConUnificators) {
-                var tempPreCon = ((GpStateNode)node).Literal;
-                uni.Substitute(ref tempPreCon);
-            }
-        }
-
-        foreach (var node in OutEdges) {
-            foreach (var uni in GpAction.PreConUnificators) {
-                var tempEffect = ((GpStateNode)node).Literal;
-                uni.Substitute(ref tempEffect);
-            }
-        }
-    }*/
 }
