@@ -3,10 +3,10 @@ using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
-public class OperatorGraph(List<ISentence> initialState, List<ISentence> goal, List<GpAction> actions)
+public class OperatorGraph(Problem problem)
 {
-    private readonly GpActionNode _startNode = new(new GpAction("Start", new(), initialState));
-    private readonly GpActionNode _finishNode = new(new GpAction("Finish", goal, new()));
+    private readonly GpActionNode _startNode = new(new GpAction("Start", new(), problem.InitialState));
+    private readonly GpActionNode _finishNode = new(new GpAction("Finish", problem.Goals, new()));
 
     private readonly List<GpLiteralNode> _literalNodes = new();
     private readonly Dictionary<GpAction, GpActionNode> _operatorNodes = new(); //can probably be local in recursion
@@ -21,8 +21,8 @@ public class OperatorGraph(List<ISentence> initialState, List<ISentence> goal, L
             _literalNodes.Add(preConNode);
         }
         
-        actions.Add(_startNode.GpAction);
-        actions.Add(_finishNode.GpAction);
+        problem.Actions.Add(_startNode.GpAction);
+        problem.Actions.Add(_finishNode.GpAction);
         
         ConstructRecursivly(_finishNode);
 
@@ -66,7 +66,7 @@ public class OperatorGraph(List<ISentence> initialState, List<ISentence> goal, L
     
     private Dictionary<GpAction, List<GpAction>> InstantiateActions() {
         var mapping = new Dictionary<GpAction, List<GpAction>>();
-        foreach (var action in actions) {
+        foreach (var action in problem.Actions) {
             var conflictFreeUnificatorPossibilities = action.GetConflictFreeUnificatorPossibilities(action.Unificators);
             
             var possibleInstances = new List<GpAction>();
@@ -119,7 +119,7 @@ public class OperatorGraph(List<ISentence> initialState, List<ISentence> goal, L
 
     private void FindApplicableAction(GpLiteralNode curLiteral)
     {
-        foreach (var action in actions)
+        foreach (var action in problem.Actions)
         {
             if (!IsEffectsApplicable(action, curLiteral.Literal))
             {

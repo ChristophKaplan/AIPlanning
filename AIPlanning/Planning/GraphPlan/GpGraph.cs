@@ -2,12 +2,12 @@ using FirstOrderLogic;
 
 namespace AIPlanning.Planning.GraphPlan;
 
-public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<GpAction> actions, OperatorGraph operatorGraph) {
+public class GpGraph(Problem problem, OperatorGraph operatorGraph) {
     private readonly Dictionary<int, GpLayer> _layers = new();
 
     public void Init() {
         var initialLayer = new GpLayer(0);
-        foreach (var sentence in initialState) {
+        foreach (var sentence in problem.InitialState) {
             initialLayer.TryAdd(new GpLiteralNode(sentence));
         }
         initialLayer.BeliefState.GetNodes.CheckMutexRelations();
@@ -21,7 +21,7 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
     
     public Solution ExtractSolution(int levelIndex, NoGoods noGoods) {
         var lastState = _layers[levelIndex].BeliefState;
-        lastState.IsCFStateFromSentencesReachable(goal, out var currentState);
+        lastState.IsCFStateFromSentencesReachable(problem.Goals, out var currentState);
         
         var solutions = new Solution();
         FindSolutions(levelIndex, currentState, noGoods, new Dictionary<int, GpLayer>(), solutions);

@@ -36,7 +36,7 @@ public class Solution {
                 actions += $"{actionNode}\n";
             }
             
-            result += $"\n STEP: {step.Key}\n ACTIONS:\n {actions}";
+            result += $"\n STEP: {step.Key} ACTIONS: {actions}";
         }
 
         var output = $"Found {_solutions.Count} solutions for level {levelIndex} \n Solution: {result}";

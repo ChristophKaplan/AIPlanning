@@ -4,18 +4,18 @@ using Helpers;
 namespace AIPlanning.Planning.GraphPlan;
 
 public class GraphPlan {
-    public Solution Run(List<ISentence> initialState, List<ISentence> goals, List<GpAction> actions) {
-        var operatorGraph = new OperatorGraph(initialState, goals, actions);
+    public Solution Run(Problem problem) {
+        var operatorGraph = new OperatorGraph(problem);
         operatorGraph.Init();
         
-        var graph = new GpGraph(initialState, goals, actions, operatorGraph);
+        var graph = new GpGraph(problem, operatorGraph);
         graph.Init();
         
-        NoGoods noGoods = new();
+        var noGoods = new NoGoods();
         var levelIndex = 0;
 
         while (true) {
-            if (graph.StateNotMutex(levelIndex, goals)) {
+            if (graph.StateNotMutex(levelIndex, problem.Goals)) {
                 var solution = graph.ExtractSolution(levelIndex, noGoods);
                 if (!solution.IsEmpty) { 
                     return solution;
