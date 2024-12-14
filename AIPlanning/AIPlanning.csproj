@@ -13,12 +13,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="FirstOrderLogic">
-            <HintPath>..\..\FirstOrderLogic\FirstOrderLogic\bin\Debug\net9.0\FirstOrderLogic.dll</HintPath>
-        </Reference>
-        <Reference Include="LRParser">
-            <HintPath>..\..\LRParser\LRParser\bin\Debug\net9.0\LRParser.dll</HintPath>
-        </Reference>
+      <Reference Include="FirstOrderLogic">
+        <HintPath>..\..\FirstOrderLogic\FirstOrderLogic\bin\Release\net9.0\FirstOrderLogic.dll</HintPath>
+      </Reference>
+      <Reference Include="LRParser">
+        <HintPath>..\..\LRParser\LRParser\bin\Release\net9.0\LRParser.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>
