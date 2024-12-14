@@ -6,11 +6,13 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) :
     public GpAction GpAction { get; } = gpAction;
 
     public override string ToString() {
-        return $"{GpAction} [m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m}, ")}]";
+        var showMutex = false;
+        var mutex = showMutex ? $"[m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m},")}]" : string.Empty;
+        return $"{GpAction} {mutex}";
     }
 
     public override int GetHashCode() {
-        return base.GetHashCode();
+        return HashCode.Combine(GpAction, IsPersistenceAction);
     }
 
     public override bool Equals(object? obj) {
@@ -33,8 +35,12 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) :
 
     public bool IsCompetingNeeds(GpActionNode other) {
         //in the paper
-        return InEdges.Any(inNode => other.InEdges.Any(otherInNode => inNode.GetMutexType(otherInNode) != MutexType.None));
-        
+        //return InEdges.Any(inNode => other.InEdges.Any(otherInNode => inNode.GetMutexType(otherInNode) != MutexType.None));
+
+        //try
+        return InEdges.Any(inNode =>
+            other.InEdges.Any(otherInNode => inNode.MutexRelation.Any(m => m.Node.Equals(otherInNode) && m.Type != MutexType.None)));
+
         //in the book
         return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
     }

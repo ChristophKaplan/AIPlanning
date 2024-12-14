@@ -8,6 +8,6 @@ public static class GpActionFabric {
         return new GpAction(name, preconditions.Select(p => (ISentence)Logic.TryParse(p)).ToList(), effects.Select(e => (ISentence)Logic.TryParse(e)).ToList());
     }
     public static List<ISentence> StringToSentence(List<string> strings) {
-        return new List<ISentence>(strings.Select(s => (ISentence)Logic.TryParse(s)));
+        return [..strings.Select(s => (ISentence)Logic.TryParse(s))];
     }
 }

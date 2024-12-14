@@ -93,11 +93,25 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     }
 
     public override int GetHashCode() {
-        return ToString().GetHashCode();
+        var hash = HashCode.Combine(Signifier);
+        for (var i = 0; i < Preconditions.Count; i++) {
+            hash = HashCode.Combine(hash, Preconditions[i]);
+        }
+
+        for (var i = 0; i < Effects.Count; i++) {
+            hash = HashCode.Combine(hash, Effects[i]);
+        }
+
+        return hash;
     }
 
     public override bool Equals(object? obj) {
-        return ToString().Equals(obj.ToString());
+        if (obj == null || GetType() != obj.GetType()) {
+            return false;
+        }
+
+        var other = (GpAction)obj;
+        return Signifier == other.Signifier && Preconditions.SequenceEqual(other.Preconditions) && Effects.SequenceEqual(other.Effects);
     }
 
     public GpAction Clone() {

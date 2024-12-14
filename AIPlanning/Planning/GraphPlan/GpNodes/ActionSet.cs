@@ -27,7 +27,7 @@ public class ActionSet{
     
     public BeliefState GetCFIncomingState() {
         var incomingNodes = nodes.SelectMany(node => node.InEdges).Distinct().ToList();
-        incomingNodes.CheckMutexRelations();
+        //incomingNodes.CheckMutexRelations();
         var conflictFree = incomingNodes.GetConflictFreeSubset();
         
         if(conflictFree.Count == 0) {

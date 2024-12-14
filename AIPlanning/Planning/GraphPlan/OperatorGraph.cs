@@ -126,11 +126,6 @@ public class OperatorGraph(List<ISentence> initialState, List<ISentence> goal, L
                 continue;
             }
             
-            if (action.Equals(_startNode.GpAction))
-            {
-                var a = 1;
-            }
-            
             if (_operatorNodes.TryGetValue(action, out var operatorNode))
             {
                 if (operatorNode.useCount > useCountStop)

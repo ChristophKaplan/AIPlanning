@@ -1,5 +1,4 @@
 using FirstOrderLogic;
-using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
@@ -53,9 +52,8 @@ public class GpGraph(List<ISentence> initialState, List<ISentence> goal, List<Gp
             }
 
             var possibleLayer = new GpLayer(levelIndex, possiblePrevState, possiblePrevActions);
-            var outcomeBranch = new Dictionary<int, GpLayer>(outcome);
-            outcomeBranch.Add(levelIndex, possibleLayer);
-                
+            var outcomeBranch = new Dictionary<int, GpLayer>(outcome) { { levelIndex, possibleLayer } };
+
             if (levelIndex == 0) {
                 solutions.Add(outcomeBranch);
                 return;

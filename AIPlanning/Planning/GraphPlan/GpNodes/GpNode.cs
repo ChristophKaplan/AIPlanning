@@ -29,7 +29,7 @@ public struct MutexTo() {
     }
 
     public override string ToString() {
-        return $"{Type}";
+        return Type.ToString();
     }
 }
 
