@@ -4,10 +4,10 @@ namespace AIPlanning.Planning.GraphPlan;
 
 public class GpLayer(int level) {
     public readonly int Level = level;
-    public BeliefState BeliefState = new();
-    public readonly ActionSet ActionSet = new();
+    public GpBeliefState BeliefState = new();
+    public readonly GpActionSet ActionSet = new();
 
-    public GpLayer(int level, BeliefState beliefState, ActionSet actionSet) : this(level) {
+    public GpLayer(int level, GpBeliefState beliefState, GpActionSet actionSet) : this(level) {
         BeliefState = beliefState;
         ActionSet = actionSet;
     }
@@ -27,7 +27,7 @@ public class GpLayer(int level) {
 
     public List<GpAction> GetUsableActions(OperatorGraph operatorGraph) {
         List<GpAction> usableActions = new();
-        foreach (var node in BeliefState.GetStateNodes) {
+        foreach (var node in BeliefState.GetLiteralNodes) {
             var literal = node.Literal;
             var possibleActionsFor = operatorGraph.GetActionsForLiteral(literal);
             usableActions.AddRange(possibleActionsFor);
@@ -47,7 +47,7 @@ public class GpLayer(int level) {
             TryAdd(actionNode);
         }
 
-        foreach (var stateNode in BeliefState.GetStateNodes) {
+        foreach (var stateNode in BeliefState.GetLiteralNodes) {
             var action = new GpAction("Persist", new List<ISentence> { stateNode.Literal }, new List<ISentence> { stateNode.Literal });
             var actionNode = new GpActionNode(action, true);
             stateNode.ConnectTo(actionNode);
@@ -59,22 +59,14 @@ public class GpLayer(int level) {
         var index = Level + 1;
         var nextLayer = new GpLayer(index);
         nextLayer.BeliefState = ActionSet.ExpandBeliefState();
-        nextLayer.BeliefState.GetNodes.CheckMutexRelations();
         return nextLayer;
     }
 
     public override string ToString() {
-        string output = $"Layer: {Level}\n";
-
-        foreach (var stateNode in BeliefState.GetStateNodes) {
-            output += stateNode.ToString() + "\n";
-        }
-
+        var output = $"Layer: {Level}\n";
+        output = BeliefState.GetLiteralNodes.Aggregate(output, (current, stateNode) => current + $"{stateNode}\n");
         output += "\n";
-        foreach (var actionNode in ActionSet.GetActionNodes) {
-            output += actionNode.ToString() + "\n";
-        }
-
+        output = ActionSet.GetActionNodes.Aggregate(output, (current, actionNode) => current + $"{actionNode}\n");
         output += "\n";
         return output;
     }

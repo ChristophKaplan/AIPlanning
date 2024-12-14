@@ -29,7 +29,7 @@ public class GpLiteralNode(ISentence literal) : GpNode {
         if (InEdges.Count == 0 || other.InEdges.Count == 0) {
             return false;
         }
-        
+
         var isAPossibleWay = InEdges.Any(inNode => other.InEdges.Any(otherInNode => inNode.GetMutexType(otherInNode) == MutexType.None));
         return !isAPossibleWay;
     }

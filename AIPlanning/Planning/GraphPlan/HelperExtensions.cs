@@ -11,7 +11,9 @@ public static class HelperExtensions {
 
         var temp = new Unificator(other, sentence);
         var isUnifiable = temp.IsUnifiable;
-        if (isUnifiable) unificator = temp;
+        if (isUnifiable) {
+            unificator = temp;
+        }
 
         return isUnifiable;
     }
@@ -21,25 +23,25 @@ public static class HelperExtensions {
         if (!sentence.IsNegationOf(other, true)) {
             return false;
         }
-        
+
         var temp = new Unificator(other, sentence);
         var isUnifiable = temp.IsUnifiable;
-        if (isUnifiable) unificator = temp;
-        
+        if (isUnifiable) {
+            unificator = temp;
+        }
+
         return isUnifiable;
     }
-    
+
     public static List<GpNode> GetConflictFreeSubset(this List<GpNode> nodes) {
-        var conflictFree = nodes.Where(node => !node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.Node))).ToList();
-        return conflictFree;
+        return nodes.Where(node => !node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.ToNode))).ToList();
     }
-    
+
     public static bool IsConflictFree(this List<GpNode> nodes) {
-        bool isConflict = nodes.Any(node => node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.Node)));
-        return isConflict;
+        return !nodes.Any(node => node.MutexRelation.Any(mutexTo => nodes.Contains(mutexTo.ToNode)));
     }
-    
-    public static  void CheckMutexRelations(this List<GpNode> nodes) {
+
+    public static void CheckMutexRelations(this List<GpNode> nodes) {
         for (var i = 0; i < nodes.Count; i++) {
             for (var j = i + 1; j < nodes.Count; j++) {
                 var nodeA = nodes[i];
@@ -53,7 +55,7 @@ public static class HelperExtensions {
             }
         }
     }
-    
+
     public static List<List<T>> GetCombinations<T>(this List<List<T>> lists) {
         var c = lists.CartesianProduct().Select(l => l.ToList()).ToList();
         return c;

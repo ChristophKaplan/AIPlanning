@@ -1,20 +1,18 @@
-using Helpers;
-
 namespace AIPlanning.Planning.GraphPlan;
 
-public class Solution {
-    int levelIndex;
-    private List<Dictionary<int, GpLayer>> _solutions = new ();
+public class GpSolution {
+    private readonly List<Dictionary<int, GpLayer>> _solutions = new();
     public bool IsEmpty => _solutions.Count == 0;
 
-    private Dictionary<int, ActionSet> GetOneSolution() {
+    private Dictionary<int, GpActionSet> GetOneSolution() {
         var reverseSolutionLayers = _solutions.Last().Reverse();
-        var solution = new Dictionary<int, ActionSet>();
+        var solution = new Dictionary<int, GpActionSet>();
         foreach (var solutionLayer in reverseSolutionLayers) {
             var actions = solutionLayer.Value.ActionSet;
             var step = solutionLayer.Key;
             solution.Add(step, actions);
         }
+
         return solution;
     }
 
@@ -24,7 +22,7 @@ public class Solution {
         }
 
         var solution = GetOneSolution();
-        
+
         var result = "";
         foreach (var step in solution) {
             var actions = "";
@@ -32,14 +30,14 @@ public class Solution {
                 if (actionNode.IsPersistenceAction) {
                     continue;
                 }
-                
+
                 actions += $"{actionNode}\n";
             }
-            
+
             result += $"\n STEP: {step.Key} ACTIONS: {actions}";
         }
 
-        var output = $"Found {_solutions.Count} solutions for level {levelIndex} \n Solution: {result}";
+        var output = $"Found {_solutions.Count} solutions. \n Solution: {result}";
         return output;
     }
 

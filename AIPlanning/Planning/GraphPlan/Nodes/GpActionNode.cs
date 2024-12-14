@@ -1,26 +1,17 @@
 namespace AIPlanning.Planning.GraphPlan;
 
 public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) : GpNode {
-    public int useCount = 0;
+    private int _useCount = 0;
     public bool IsPersistenceAction { get; } = isPersistenceAction;
     public GpAction GpAction { get; } = gpAction;
 
-    public override string ToString() {
-        var showMutex = false;
-        var mutex = showMutex ? $"[m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m},")}]" : string.Empty;
-        return $"{GpAction} {mutex}";
-    }
-
-    public override int GetHashCode() {
-        return HashCode.Combine(GpAction, IsPersistenceAction);
-    }
-
-    public override bool Equals(object? obj) {
-        if (obj is GpActionNode actionNode) {
-            return GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
+    public bool TryIncreaseUseCount(int useCountStop) {
+        if (_useCount >= useCountStop) {
+            return false;
         }
 
-        return false;
+        _useCount++;
+        return true;
     }
 
     public bool IsInconsistentEffects(GpActionNode other) {
@@ -39,9 +30,27 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) :
 
         //try
         return InEdges.Any(inNode =>
-            other.InEdges.Any(otherInNode => inNode.MutexRelation.Any(m => m.Node.Equals(otherInNode) && m.Type != MutexType.None)));
+            other.InEdges.Any(otherInNode => inNode.MutexRelation.Any(m => m.ToNode.Equals(otherInNode) && m.Type != MutexType.None)));
 
         //in the book
         return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
+    }
+    
+    public override int GetHashCode() {
+        return HashCode.Combine(GpAction, IsPersistenceAction);
+    }
+
+    public override bool Equals(object? obj) {
+        if (obj is GpActionNode actionNode) {
+            return GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
+        }
+
+        return false;
+    }
+    
+    public override string ToString() {
+        var showMutex = false;
+        var mutex = showMutex ? $"[m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m},")}]" : string.Empty;
+        return $"{GpAction} {mutex}";
     }
 }
