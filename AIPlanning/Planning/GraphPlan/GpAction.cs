@@ -16,7 +16,6 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public List<ISentence> Effects { get; } = effects;
 
     public List<Unificator> Unificators { get; set; } = new();
-    public bool IsSpecified;
 
     public bool IsApplicableToPreconditions(BeliefState beliefState, out List<GpNode> satisfied) {
         satisfied = beliefState.GetSubBeliefStateMatchingTo(Preconditions);
@@ -26,9 +25,43 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
     public GpAction(GpAction action) : this(action.Signifier,
         action.Preconditions.Select(p => p.Clone()).ToList(),
         action.Effects.Select(e => e.Clone()).ToList()) {
-        IsSpecified = action.IsSpecified;
     }
 
+    private Dictionary<Variable, List<Term>> GetPossibleConflictFreeSubstitutions(List<Unificator> unificators) {
+        Dictionary<Variable, List<Term>> collectPossibilities = new();
+        foreach (var unificator in unificators) {
+            if(unificator.IsEmpty) {
+                continue;
+            }
+
+            foreach (var substitution in unificator.Substitutions) {
+                if (!collectPossibilities.TryAdd(substitution.Key, new() { substitution.Value })) {
+                    collectPossibilities[substitution.Key].Add(substitution.Value);
+                }
+            }
+        }
+        
+        return collectPossibilities;
+    }
+
+    public List<Unificator> GetConflictFreeUnificatorPossibilities(List<Unificator> unificators) {
+        var substitutions = GetPossibleConflictFreeSubstitutions(unificators);
+        var lk = substitutions.Keys.ToList();
+        var lv = substitutions.Values.ToList();
+        var combs = lv.GetCombinations();
+
+        List<Unificator> possibilities = new();
+        foreach (var comb in combs) {
+            Dictionary<Variable, Term> possibility = new();
+            for (var i = 0; i < lk.Count; i++) {
+                possibility.Add(lk[i], comb[i]);
+            }
+            possibilities.Add(new Unificator(possibility));
+        }
+        
+        return possibilities;
+    }
+    
     public void SpecifyAction(Unificator unificator) {
         foreach (var preCon in Preconditions) {
             var tempPreCon = preCon;
@@ -39,26 +72,6 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
             var tempEffect = effect;
             unificator.Substitute(ref tempEffect);
         }
-        
-        IsSpecified = true;
-    }
-
-    public bool ContainsVariable() {
-        foreach (var preCon in Preconditions) {
-            var anyVar = preCon.GetPredicate().Terms.Any(t => t is Variable);
-            if (anyVar) {
-                return true;
-            }
-        }
-
-        foreach (var effect in Effects) {
-            var anyVar = effect.GetPredicate().Terms.Any(t => t is Variable);
-            if (anyVar) {
-                return true;
-            }
-        }
-        
-        return false;
     }
 
     public bool IsConsistent(bool inMatchedTerms = false) {

@@ -2,7 +2,7 @@ namespace AIPlanning.Planning.GraphPlan;
 
 public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) : GpNode {
     public int useCount = 0;
-    private bool IsPersistenceAction { get; } = isPersistenceAction;
+    public bool IsPersistenceAction { get; } = isPersistenceAction;
     public GpAction GpAction { get; } = gpAction;
 
     public override string ToString() {
@@ -31,7 +31,11 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) :
         return isInterference;
     }
 
-    public bool IsConflictingNeeds(GpActionNode other) {
+    public bool IsCompetingNeeds(GpActionNode other) {
+        //in the paper
+        return InEdges.Any(inNode => other.InEdges.Any(otherInNode => inNode.GetMutexType(otherInNode) != MutexType.None));
+        
+        //in the book
         return GpAction.Preconditions.Any(preCon => other.GpAction.Preconditions.Any(otherPreCon => preCon.IsNegationOf(otherPreCon)));
     }
 }

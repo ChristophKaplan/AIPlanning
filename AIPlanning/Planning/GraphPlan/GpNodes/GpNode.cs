@@ -1,12 +1,13 @@
-namespace AIPlanning.Planning.GraphPlan;
+using System.Diagnostics.CodeAnalysis;
 
+namespace AIPlanning.Planning.GraphPlan;
 
 public enum MutexType {
     None,
     InconsistentSupport,
     LiteralNegation,
     Interference,
-    ConflictingNeeds,
+    CompetingNeeds,
     InconsistentEffects
 }
 
@@ -18,7 +19,15 @@ public struct MutexTo() {
         Type = type;
         Node = node;
     }
+
+    public override bool Equals([NotNullWhen(true)] object? obj) {
+        return obj is MutexTo other && Type == other.Type && Node.Equals(other.Node);
+    }
     
+    public override int GetHashCode() {
+        return HashCode.Combine(Type, Node);
+    }
+
     public override string ToString() {
         return $"{Type}";
     }
@@ -27,18 +36,18 @@ public struct MutexTo() {
 public abstract class GpNode {
     public List<GpNode> InEdges { get; } = [];
     public List<GpNode> OutEdges { get; } = [];
-    public List<MutexTo> MutexRelation { get; } = [];
-    
-    public void AddInEdge(GpNode edge) {
+    public HashSet<MutexTo> MutexRelation { get; } = [];
+
+    private void AddInEdge(GpNode edge) {
         if(!InEdges.Contains(edge)) InEdges.Add(edge);
     }
-    
-    public void AddOutEdge(GpNode edge) {
+
+    private void AddOutEdge(GpNode edge) {
         if(!OutEdges.Contains(edge)) OutEdges.Add(edge);
     }
 
     private void AddMutexRelation(MutexTo mutexTo) {
-        if(!MutexRelation.Contains(mutexTo)) MutexRelation.Add(mutexTo);
+        MutexRelation.Add(mutexTo);
     }
     
     public void ConnectTo(GpNode connectToMe) {
@@ -63,7 +72,7 @@ public abstract class GpNode {
     public MutexType GetMutexType(GpNode other) {
         if (Equals(other)) return MutexType.None;
 
-        if (this is GpStateNode s1 && other is GpStateNode s2) {
+        if (this is GpLiteralNode s1 && other is GpLiteralNode s2) {
             if( s1.IsInconsistentSupport(s2)) return MutexType.InconsistentSupport;
             else if(s1.Literal.IsNegationOf(s2.Literal)) return MutexType.LiteralNegation;
         }
@@ -71,7 +80,7 @@ public abstract class GpNode {
         if (this is GpActionNode a1 && other is GpActionNode a2) {
             if (a1.IsInconsistentEffects(a2)) return MutexType.InconsistentEffects;
             else if (a1.IsInterference(a2)) return MutexType.Interference;
-            else if (a1.IsConflictingNeeds(a2)) return MutexType.ConflictingNeeds;
+            else if (a1.IsCompetingNeeds(a2)) return MutexType.CompetingNeeds;
         }
 
         return MutexType.None;

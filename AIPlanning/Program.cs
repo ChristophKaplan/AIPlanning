@@ -1,15 +1,14 @@
 ﻿using AIPlanning.Planning.GraphPlan;
+using Helpers;
 
-var initialState = GpActionFabric.StringToSentence(["At(Work)", "NOT At(Supermarket)"]);
-var goals = GpActionFabric.StringToSentence(["Have(Apple)", "At(Home)"]);
 
-var pickup = GpActionFabric.Create("PickUp", ["At(Supermarket)"], ["Have(x)"]);
+var initialState = GpActionFabric.StringToSentence(["At(Work)", "NOT At(Supermarket)", "NOT At(Home)"]);
+var goals = GpActionFabric.StringToSentence(["Have(Apple)", "Have(Cake)", "At(Home)"]);
+
+var work = GpActionFabric.Create("Work", ["At(Work)"], ["Have(Money)"]);
+var buy = GpActionFabric.Create("Buy", ["At(Supermarket)", "Have(Money)"], ["Have(x)", "NOT Have(Money)"]);
 var move = GpActionFabric.Create("Move", ["NOT At(x)", "At(y)"], ["At(x)", "NOT At(y)"]);
 
-var moves = GpActionFabric.Create("MoveSupermarket", ["NOT At(Supermarket)", "At(x)"], ["At(Supermarket)", "NOT At(x)"]);
-var moveh = GpActionFabric.Create("MoveHome", ["NOT At(Home)", "At(x)"], ["At(Home)", "NOT At(x)"]);
-
-
 var graph = new GraphPlan();
-//var solution = graph.Run(initialState, goals, [moves, moveh, pickup]);
-var solution = graph.Run(initialState, goals, [move, pickup]);
+var solution = graph.Run(initialState, goals, [move, work, buy]);
+Logger.Log(solution.ToString()); 

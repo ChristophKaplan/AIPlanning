@@ -1,29 +1,30 @@
 using FirstOrderLogic;
+using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
 public class BeliefState {
-    private readonly List<GpStateNode> nodes = new();
+    private readonly List<GpLiteralNode> nodes = new();
     public List<Unificator> Unificators { get; } = new();
     
     public BeliefState() { }
     
     public BeliefState(List<GpNode> nodes) {
-        this.nodes = nodes.Select(n => (GpStateNode)n).ToList();
+        this.nodes = nodes.Select(n => (GpLiteralNode)n).ToList();
     }
     
     public List<GpNode> GetNodes => nodes.Select(n => (GpNode)n).ToList();
     
-    public List<GpStateNode> GetStateNodes => nodes;
+    public List<GpLiteralNode> GetStateNodes => nodes;
     
-    public void TryAdd(GpStateNode stateNode) {
-        var contained = nodes.FirstOrDefault(stateNode.Equals);
+    public void TryAdd(GpLiteralNode literalNode) {
+        var contained = nodes.FirstOrDefault(literalNode.Equals);
         if (contained != null) {
-            stateNode.MergeRelations(contained);
+            literalNode.MergeRelations(contained);
             return;
         }
 
-        nodes.Add(stateNode);
+        nodes.Add(literalNode);
     }
     
     public List<GpNode> GetSubBeliefStateMatchingTo(List<ISentence> sentences) {
@@ -32,25 +33,14 @@ public class BeliefState {
         foreach (var literal in sentences) {
             var applicableNode = nodes.FirstOrDefault(node => IsMatchAndAddUnificator(node.Literal, literal));
             if (applicableNode == null) {
-                
                 /*if (literal.IsNegation) {
                     Logger.Log($"Negation {literal} not found in state");
-                    
-                    var isContainedPositivly = nodes.Any(sn => sn.Literal.Equals(literal.Children[0]));
-                    if (!isContainedPositivly) {
-                        Logger.Log($"Negation {literal} added to state");
-                        var negation = new GpStateNode(literal);
-                        nodes.Add(negation);
-                        satisfiedPreconditionNodes.Add(negation);
-                    }
-
                     continue;
                 }*/
 
                 return null;
             }
             
-            //GetNodes.CheckMutexRelations();
 
             satisfiedPreconditionNodes.Add(applicableNode);
         }
@@ -79,10 +69,6 @@ public class BeliefState {
                 if (stateNode.Literal.Equals(goal)) {
                     reachedSubState.Add(stateNode);
                 }
-                
-                /*if (IsMatchAndAddUnificator(stateNode.Literal, goal)) { // ist die frage ob man hier At(y) zulässt?
-                    reachedSubState.Add(stateNode);
-                }*/
             }
         }
 

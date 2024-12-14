@@ -42,7 +42,7 @@ public class ActionSet{
         foreach (var actionNode in nodes) {
             var list = actionNode.GpAction.Effects;
             foreach (var effect in list) {
-                var stateNode = new GpStateNode(effect);
+                var stateNode = new GpLiteralNode(effect);
                 actionNode.ConnectTo(stateNode);
                 beliefState.TryAdd(stateNode);
             }

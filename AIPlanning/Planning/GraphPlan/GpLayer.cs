@@ -14,7 +14,7 @@ public class GpLayer(int level) {
 
     public void TryAdd(GpNode gpNode) {
         switch (gpNode) {
-            case GpStateNode stateNode: {
+            case GpLiteralNode stateNode: {
                 BeliefState.TryAdd(stateNode);
                 break;
             }
@@ -29,11 +29,11 @@ public class GpLayer(int level) {
         List<GpAction> usableActions = new();
         foreach (var node in BeliefState.GetStateNodes) {
             var literal = node.Literal;
-            var possibleActionsFor = operatorGraph.GetPossibleActionsFor(literal);
+            var possibleActionsFor = operatorGraph.GetActionsForLiteral(literal);
             usableActions.AddRange(possibleActionsFor);
         }
 
-        return usableActions;
+        return usableActions.Distinct().ToList();
     }
 
     public void ExpandActions(List<GpAction> actions) {
