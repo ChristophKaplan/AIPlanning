@@ -6,7 +6,9 @@ public class GpActionSet {
     private readonly List<GpActionNode> _actionNodes = new();
     public List<GpNode> GetNodes => _actionNodes.Select(n => (GpNode)n).ToList();
     public List<GpActionNode> GetActionNodes => _actionNodes;
-    public List<GpAction> GetActions => _actionNodes.Select(n => n.GpAction).ToList();
+    public List<GpAction> GetActions(bool ignorePersitance = true) => _actionNodes
+        .Where(n => !ignorePersitance || !n.IsPersistenceAction)
+        .Select(n => n.GpAction).ToList();
 
     public GpActionSet() {
     }
