@@ -17,7 +17,7 @@ public class OperatorGraph
         Init();
     }
 
-    public void Init()
+    private void Init()
     {
         Actions = problem.Actions;
 
@@ -36,7 +36,7 @@ public class OperatorGraph
         ConstructGraphRecursivly(finishNode);
         ReplaceAbstractWithConcreteActions();
 
-        Logger.Log($"Operator Graph: {ToString()}");
+        //Logger.Log($"Operator Graph: {ToString()}");
     }
 
     public List<GpAction> GetActionsForLiteral(ISentence literal)
