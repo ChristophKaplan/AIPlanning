@@ -1,5 +1,4 @@
 using FirstOrderLogic;
-using Helpers;
 
 namespace AIPlanning.Planning.GraphPlan;
 
@@ -44,7 +43,7 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
             for (var i = 0; i < variables.Count; i++) {
                 possibility.Add(variables[i], comb[i]);
             }
-
+            
             possibilities.Add(new Unificator(possibility));
         }
 
