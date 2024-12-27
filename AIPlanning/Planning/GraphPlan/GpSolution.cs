@@ -9,7 +9,7 @@ public class GpSolution {
         _solutions.Add(solution);
     }
     
-    private Dictionary<int, GpActionSet> GetSolution(int index) {
+    public Dictionary<int, GpActionSet> GetSolution(int index) {
         if (index >= _solutions.Count)
         {
             throw new Exception($"Index {index} out of range");
