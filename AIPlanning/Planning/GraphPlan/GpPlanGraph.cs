@@ -64,7 +64,8 @@ public class GpPlanGraph {
             var outcomeBranch = new Dictionary<int, GpLayer>(outcome) { { levelIndex, possibleLayer } };
 
             if (levelIndex == 0) {
-                solutions.Add(outcomeBranch);
+                var solution = outcomeBranch.Reverse().ToDictionary();
+                solutions.Add(solution);
                 return;
             }
 
