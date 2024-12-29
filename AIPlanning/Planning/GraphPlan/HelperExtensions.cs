@@ -5,12 +5,11 @@ namespace AIPlanning.Planning.GraphPlan;
 public static class HelperExtensions {
     public static bool Match(this ISentence sentence, ISentence other, out Unificator unificator) {
         unificator = null;
-        if (sentence.IsNegationOf(other, true)) {
-            return false;
-        }
+        if (sentence.IsNegationOf(other, true)) { return false; }
 
         var temp = new Unificator(other, sentence);
         var isUnifiable = temp.IsUnifiable;
+        
         if (isUnifiable) {
             unificator = temp;
         }

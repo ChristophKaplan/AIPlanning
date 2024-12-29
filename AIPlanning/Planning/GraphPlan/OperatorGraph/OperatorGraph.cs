@@ -113,7 +113,7 @@ public class OperatorGraph
 
     private void ConstructGraphRecursivly(GpNode curNode)
     {
-        Dictionary<GpAction, GpActionNode> operatorNodes = new();
+        var operatorNodes = new Dictionary<GpAction, GpActionNode>();
 
         switch (curNode)
         {
@@ -148,8 +148,7 @@ public class OperatorGraph
         }
     }
 
-    private bool TryGetMatchingLiteralNodes(ISentence literal, out List<GpLiteralNode> preConNodes,
-        out List<Unificator> unificators)
+    private bool TryGetMatchingLiteralNodes(ISentence literal, out List<GpLiteralNode> preConNodes, out List<Unificator> unificators)
     {
         var isMatch = false;
         unificators = new List<Unificator>();
