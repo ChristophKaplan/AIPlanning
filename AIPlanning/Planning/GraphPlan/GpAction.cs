@@ -9,15 +9,24 @@ public interface IGpAction {
     bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied);
 }
 
-public class GpAction(string name, List<ISentence> preconditions, List<ISentence> effects) : IGpAction {
-    public string Signifier { get; } = name;
-    public List<ISentence> Preconditions { get; } = preconditions;
-    public List<ISentence> Effects { get; } = effects;
+public class GpAction : IGpAction {
+    private int _hashcode;
+    public string Signifier { get; }
+    public List<ISentence> Preconditions { get; }
+    public List<ISentence> Effects { get; }
     public List<Unificator> Unificators { get; } = new();
 
     private GpAction(GpAction action) : this(action.Signifier,
         action.Preconditions.Select(p => p.Clone()).ToList(),
         action.Effects.Select(e => e.Clone()).ToList()) {
+    }
+
+    public GpAction(string name, List<ISentence> preconditions, List<ISentence> effects)
+    {
+        Signifier = name;
+        Preconditions = preconditions;
+        Effects = effects;
+        UpdateHashCode();
     }
 
     public GpAction Clone() {
@@ -78,6 +87,8 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
             var tempEffect = effect;
             unificator.Substitute(ref tempEffect);
         }
+        
+        UpdateHashCode();
     }
 
     public bool IsConsistent() {
@@ -86,10 +97,16 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
         return !isConflictInPreCons && !isConflictInEffects;
     }
 
-    public override int GetHashCode() {
+    public override int GetHashCode()
+    {
+        return _hashcode;
+    }
+
+    private void UpdateHashCode()
+    {
         var hash = HashCode.Combine(Signifier);
         hash = Preconditions.Aggregate(hash, HashCode.Combine);
-        return Effects.Aggregate(hash, HashCode.Combine);
+        _hashcode = Effects.Aggregate(hash, HashCode.Combine);
     }
 
     public override bool Equals(object? obj) {
@@ -97,6 +114,8 @@ public class GpAction(string name, List<ISentence> preconditions, List<ISentence
             return false;
         }
 
+        return GetHashCode() == obj.GetHashCode();
+        
         var other = (GpAction)obj;
         return Signifier == other.Signifier && Preconditions.SequenceEqual(other.Preconditions) && Effects.SequenceEqual(other.Effects);
     }
