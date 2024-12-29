@@ -36,7 +36,7 @@ public class OperatorGraph
         ConstructGraphRecursivly(finishNode);
         ReplaceAbstractWithConcreteActions();
 
-        //Logger.Log($"Operator Graph: {ToString()}");
+        Logger.Log($"Operator Graph: {ToString()}");
     }
 
     public List<GpAction> GetActionsForLiteral(ISentence literal)
@@ -134,6 +134,7 @@ public class OperatorGraph
         {
             if (!TryGetMatchingLiteralNodes(preCon, out var literalNodes, out var unificators))
             {
+                //TODO: clarify if its a problem that we can add literals with "unspecified variables" here.
                 literalNodes = new List<GpLiteralNode>() { new(preCon) };
                 _literalNodes.AddRange(literalNodes);
             }

@@ -3,7 +3,7 @@ namespace AIPlanning.Planning.GraphPlan;
 public class GraphPlanAlgo {
     public GpSolution Run(GpProblem problem) {
         var graph = new GpPlanGraph(problem);
-
+        
         var noGoods = new NoGoods();
         var levelIndex = 0;
 

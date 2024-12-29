@@ -14,7 +14,7 @@ public class GpPlanGraph {
 
     public void Init() {
         operatorGraph = new OperatorGraph(problem);
-
+        
         var initialLayer = new GpLayer(0);
         foreach (var sentence in problem.InitialState) {
             initialLayer.TryAdd(new GpLiteralNode(sentence));
