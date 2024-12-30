@@ -9,7 +9,7 @@ public interface IGpAction {
     bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied);
 }
 
-public class GpAction : IGpAction {
+public class GpAction : IGpAction , IEquatable<GpAction> {
     private int _hashcode;
     public string Signifier { get; }
     public List<ISentence> Preconditions { get; }
@@ -101,23 +101,50 @@ public class GpAction : IGpAction {
     {
         return _hashcode;
     }
-
+    
     private void UpdateHashCode()
     {
-        var hash = HashCode.Combine(Signifier);
-        hash = Preconditions.Aggregate(hash, HashCode.Combine);
-        _hashcode = Effects.Aggregate(hash, HashCode.Combine);
+        var hash = new HashCode();
+        hash.Add(Signifier);
+
+        foreach (var precondition in Preconditions)
+        {
+            hash.Add(precondition);
+        }
+
+        foreach (var effect in Effects)
+        {
+            hash.Add(effect);
+        }
+
+        _hashcode = hash.ToHashCode();
     }
 
-    public override bool Equals(object? obj) {
-        if (obj == null || GetType() != obj.GetType()) {
+    public bool Equals(GpAction? other)
+    {
+        if (other == null)
+        {
             return false;
         }
 
-        return GetHashCode() == obj.GetHashCode();
-        
-        var other = (GpAction)obj;
-        return Signifier == other.Signifier && Preconditions.SequenceEqual(other.Preconditions) && Effects.SequenceEqual(other.Effects);
+        if (ReferenceEquals(this, other))
+        {
+            return true;
+        }
+
+        if (_hashcode != other._hashcode)
+        {
+            return false;
+        }
+
+        return Signifier == other.Signifier &&
+               Preconditions.SequenceEqual(other.Preconditions) &&
+               Effects.SequenceEqual(other.Effects);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        return obj is GpAction other && Equals(other);
     }
 
     public override string ToString() {
