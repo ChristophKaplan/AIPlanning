@@ -24,7 +24,7 @@ public class GpSolution {
 
         return solution;
     }
-
+    
     public override string ToString() {
         if (IsEmpty) return "No solutions found!";
         
@@ -37,7 +37,7 @@ public class GpSolution {
             foreach (var step in solution)
             {
                 var actions = step.Value.GetActionNodes.Where(actionNode => !actionNode.IsPersistenceAction);
-                var actionsAsString = actions.Aggregate("", (current, actionNode) => current + $"{actionNode}\n");
+                var actionsAsString = string.Join("\n", actions);
                 result += $"\n STEP: {step.Key} ACTIONS: {actionsAsString}";
             }
         }
