@@ -84,6 +84,7 @@ public class OperatorGraph
         var mapping = new Dictionary<GpAction, List<GpAction>>();
         foreach (var action in Actions)
         {
+            action.DistinctUnificators();
             var possibleInstances = new List<GpAction>();
 
             var noMultipleInstancesNeeded = action.Unificators.All(u => u.IsEmpty);
@@ -139,7 +140,7 @@ public class OperatorGraph
                 _literalNodes.AddRange(literalNodes);
             }
 
-            curAction.GpAction.Unificators.AddRange(unificators);
+            curAction.GpAction.AddUnificators(unificators);
 
             foreach (var literalNode in literalNodes)
             {
@@ -219,7 +220,7 @@ public class OperatorGraph
             return false;
         }
 
-        action.Unificators.AddRange(uniList.Distinct());
+        action.AddUnificators(uniList);
         return action.IsConsistent();
     }
 

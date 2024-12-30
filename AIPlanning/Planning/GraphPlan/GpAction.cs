@@ -14,7 +14,7 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
     public string Signifier { get; }
     public List<ISentence> Preconditions { get; }
     public List<ISentence> Effects { get; }
-    public List<Unificator> Unificators { get; } = new();
+    public List<Unificator> Unificators { get; private set; } = new();
 
     private GpAction(GpAction action) : this(action.Signifier,
         action.Preconditions.Select(p => p.Clone()).ToList(),
@@ -29,10 +29,18 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
         UpdateHashCode();
     }
 
-    public GpAction Clone() {
-        return new GpAction(this);
+    public GpAction Clone() => new GpAction(this);
+    
+    public void DistinctUnificators()
+    {
+        Unificators = Unificators.Distinct().ToList();
     }
-
+    
+    public void AddUnificators(IEnumerable<Unificator> unificators)
+    {
+        Unificators.AddRange(unificators.Distinct());
+    }
+    
     public bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied) {
         satisfied = beliefState.GetSubSetOfNodesMatching(Preconditions);
         return satisfied != null && satisfied.Count == Preconditions.Count;
