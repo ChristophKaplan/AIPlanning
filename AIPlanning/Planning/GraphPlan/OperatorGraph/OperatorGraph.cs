@@ -84,7 +84,7 @@ public class OperatorGraph
         var mapping = new Dictionary<GpAction, List<GpAction>>();
         foreach (var action in Actions)
         {
-            action.DistinctUnificators();
+            //action.DistinctUnificators();
             var possibleInstances = new List<GpAction>();
 
             var noMultipleInstancesNeeded = action.Unificators.All(u => u.IsEmpty);

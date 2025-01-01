@@ -41,8 +41,12 @@ public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) :
     }
 
     public override bool Equals(object? obj) {
+        if(ReferenceEquals(this,obj)) {
+            return true;
+        }
+        
         if (obj is GpActionNode actionNode) {
-            return GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
+            return  GpAction.Equals(actionNode.GpAction) && IsPersistenceAction == actionNode.IsPersistenceAction;
         }
 
         return false;

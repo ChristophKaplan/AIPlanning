@@ -14,7 +14,7 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
     public string Signifier { get; }
     public List<ISentence> Preconditions { get; }
     public List<ISentence> Effects { get; }
-    public List<Unificator> Unificators { get; private set; } = new();
+    public HashSet<Unificator> Unificators { get; private set; } = new();
 
     private GpAction(GpAction action) : this(action.Signifier,
         action.Preconditions.Select(p => p.Clone()).ToList(),
@@ -31,14 +31,14 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
 
     public GpAction Clone() => new GpAction(this);
     
-    public void DistinctUnificators()
+    /*public void DistinctUnificators()
     {
         Unificators = Unificators.Distinct().ToList();
-    }
+    }*/
     
     public void AddUnificators(IEnumerable<Unificator> unificators)
     {
-        Unificators.AddRange(unificators.Distinct());
+        Unificators.UnionWith(unificators);
     }
     
     public bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied) {
@@ -46,14 +46,14 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
         return satisfied != null && satisfied.Count == Preconditions.Count;
     }
 
-    public List<Unificator> GetConflictFreeUnificatorPossibilities(List<Unificator> unificators) {
+    public HashSet<Unificator> GetConflictFreeUnificatorPossibilities(HashSet<Unificator> unificators) {
         var substitutions = ArrangeSubstitutionsAsTrees(unificators);
 
         var variables = substitutions.Keys.ToList();
         var termLists = substitutions.Values.ToList();
         var combs = termLists.GetCombinations();
 
-        var possibilities = new List<Unificator>();
+        var possibilities = new HashSet<Unificator>();
 
         foreach (var comb in combs) {
             var possibility = new Dictionary<Variable, Term>();
@@ -67,7 +67,7 @@ public class GpAction : IGpAction , IEquatable<GpAction> {
         return possibilities;
     }
 
-    private Dictionary<Variable, List<Term>> ArrangeSubstitutionsAsTrees(List<Unificator> unificators) {
+    private Dictionary<Variable, List<Term>> ArrangeSubstitutionsAsTrees(HashSet<Unificator> unificators) {
         var collectPossibilities = new Dictionary<Variable, List<Term>>();
 
         foreach (var unificator in unificators) {

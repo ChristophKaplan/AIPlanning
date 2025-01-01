@@ -14,6 +14,10 @@ public class GpLiteralNode(ISentence literal) : GpNode {
     }
 
     public override bool Equals(object? obj) {
+        if(ReferenceEquals(this,obj)) {
+            return true;
+        }
+        
         if (obj is GpLiteralNode stateNode) {
             return Literal.Equals(stateNode.Literal);
         }
