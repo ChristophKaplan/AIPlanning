@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FirstOrderLogic;
+using LogHelper;
 
 namespace AIPlanning.Planning.GraphPlan {
     public class OperatorGraph
@@ -36,7 +37,7 @@ namespace AIPlanning.Planning.GraphPlan {
             ConstructGraphRecursivly(finishNode);
             ReplaceAbstractWithConcreteActions();
 
-            Logger.Logger.Log($"Operator Graph: {ToString()}");
+            Logger.Log($"Operator Graph: {ToString()}");
         }
 
         public List<GpAction> GetActionsForLiteral(ISentence literal)
