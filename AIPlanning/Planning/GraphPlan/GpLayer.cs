@@ -2,14 +2,18 @@ using FirstOrderLogic;
 
 namespace AIPlanning.Planning.GraphPlan;
 
-public class GpLayer(int level) {
-    public readonly int Level = level;
+public class GpLayer {
+    public readonly int Level;
     public GpBeliefState BeliefState = new();
     public readonly GpActionSet ActionSet = new();
 
     public GpLayer(int level, GpBeliefState beliefState, GpActionSet actionSet) : this(level) {
         BeliefState = beliefState;
         ActionSet = actionSet;
+    }
+
+    public GpLayer(int level) {
+        Level = level;
     }
 
     public void TryAdd(GpNode gpNode) {

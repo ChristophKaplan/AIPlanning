@@ -12,6 +12,7 @@ public static class GpActionFactory {
     }
 
     public static List<ISentence> StringToSentence(List<string> strings) {
-        return [..strings.Select(s => (ISentence)Logic.TryParse(s))];
+        //[..strings.Select(s => (ISentence)Logic.TryParse(s))];
+        return strings.Select(s => (ISentence)Logic.TryParse(s)).ToList();
     }
 }

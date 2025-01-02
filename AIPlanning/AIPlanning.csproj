@@ -2,22 +2,22 @@
 
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>11</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="ConsoleTables" Version="2.6.2"/>
-        <PackageReference Include="NUnit" Version="4.2.2"/>
     </ItemGroup>
 
     <ItemGroup>
       <Reference Include="FirstOrderLogic">
-        <HintPath>..\..\FirstOrderLogic\FirstOrderLogic\bin\Release\net9.0\FirstOrderLogic.dll</HintPath>
+        <HintPath>..\..\FirstOrderLogic\FirstOrderLogic\bin\Release\netcoreapp3.1\FirstOrderLogic.dll</HintPath>
       </Reference>
       <Reference Include="LRParser">
-        <HintPath>..\..\LRParser\LRParser\bin\Release\net9.0\LRParser.dll</HintPath>
+        <HintPath>..\..\LRParser\LRParser\bin\Release\netcoreapp3.1\LRParser.dll</HintPath>
       </Reference>
     </ItemGroup>
 

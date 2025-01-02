@@ -64,11 +64,11 @@ public class GpPlanGraph {
             var outcomeBranch = new Dictionary<int, GpLayer>(outcome) { { levelIndex, possibleLayer } };
 
             if (levelIndex == 0) {
-                var solution = outcomeBranch.Reverse().ToDictionary();
+                var solution = outcomeBranch.Reverse().ToDictionary(pair => pair.Key, pair => pair.Value);
                 solutions.Add(solution);
                 return;
             }
-
+            
             FindSolutions(levelIndex, preConditionalState, noGoods, outcomeBranch, solutions);
         }
 

@@ -2,8 +2,12 @@ using FirstOrderLogic;
 
 namespace AIPlanning.Planning.GraphPlan;
 
-public class GpLiteralNode(ISentence literal) : GpNode {
-    public ISentence Literal { get; set; } = literal;
+public class GpLiteralNode : GpNode {
+    public GpLiteralNode(ISentence literal) {
+        Literal = literal;
+    }
+
+    public ISentence Literal { get; set; }
 
     public override string ToString() {
         return $"{Literal} [m:{MutexRelation.Aggregate("", (s, m) => $"{s}{m}, ")}]";

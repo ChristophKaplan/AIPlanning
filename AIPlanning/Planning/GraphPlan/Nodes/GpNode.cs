@@ -1,9 +1,9 @@
 namespace AIPlanning.Planning.GraphPlan;
 
 public abstract class GpNode {
-    public List<GpNode> InEdges { get; } = [];
-    public List<GpNode> OutEdges { get; } = [];
-    public HashSet<MutexRel> MutexRelation { get; } = [];
+    public List<GpNode> InEdges { get; } = new();
+    public List<GpNode> OutEdges { get; } = new();
+    public HashSet<MutexRel> MutexRelation { get; } = new();
 
     private void AddInEdge(GpNode edge) {
         if (!InEdges.Contains(edge)) {

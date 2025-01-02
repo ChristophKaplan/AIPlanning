@@ -12,7 +12,7 @@ public enum MutexType {
 }
 
 //Mainly used for debugging the mutex relations
-public readonly struct MutexRel() {
+public readonly struct MutexRel {
     public readonly MutexType Type;
     public readonly GpNode ToNode;
 

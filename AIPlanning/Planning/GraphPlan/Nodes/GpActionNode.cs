@@ -1,9 +1,15 @@
 namespace AIPlanning.Planning.GraphPlan;
 
-public class GpActionNode(GpAction gpAction, bool isPersistenceAction = false) : GpNode {
+public class GpActionNode : GpNode {
     private int _useCount = 0;
-    public bool IsPersistenceAction { get; } = isPersistenceAction;
-    public GpAction GpAction { get; } = gpAction;
+
+    public GpActionNode(GpAction gpAction, bool isPersistenceAction = false) {
+        IsPersistenceAction = isPersistenceAction;
+        GpAction = gpAction;
+    }
+
+    public bool IsPersistenceAction { get; }
+    public GpAction GpAction { get; }
 
     public bool TryIncreaseUseCount(int useCountStop) {
         if (_useCount >= useCountStop) {
