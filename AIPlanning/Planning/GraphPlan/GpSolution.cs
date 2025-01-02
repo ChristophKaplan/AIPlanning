@@ -1,48 +1,52 @@
-namespace AIPlanning.Planning.GraphPlan;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-public class GpSolution {
-    private readonly List<Dictionary<int, GpLayer>> _solutions = new();
-    public bool IsEmpty => _solutions.Count == 0;
+namespace AIPlanning.Planning.GraphPlan {
+    public class GpSolution {
+        private readonly List<Dictionary<int, GpLayer>> _solutions = new();
+        public bool IsEmpty => _solutions.Count == 0;
 
-    public void Add(Dictionary<int, GpLayer> solution)
-    {
-        _solutions.Add(solution);
-    }
-    
-    public Dictionary<int, GpActionSet> GetSolution(int index) {
-        if (index >= _solutions.Count)
+        public void Add(Dictionary<int, GpLayer> solution)
         {
-            throw new Exception($"Index {index} out of range");
+            _solutions.Add(solution);
         }
-        
-        var solution = new Dictionary<int, GpActionSet>();
-        foreach (var solutionLayer in _solutions[index]) {
-            var actions = solutionLayer.Value.ActionSet;
-            var step = solutionLayer.Key;
-            solution.Add(step, actions);
-        }
-
-        return solution;
-    }
     
-    public override string ToString() {
-        if (IsEmpty) return "No solutions found!";
-        
-        var result = "";
-
-        for (var i = 0; i < _solutions.Count; i++)
-        {
-            result += $"Solution: {i}\n";
-            var solution = GetSolution(i);
-            foreach (var step in solution)
+        public Dictionary<int, GpActionSet> GetSolution(int index) {
+            if (index >= _solutions.Count)
             {
-                var actions = step.Value.GetActionNodes.Where(actionNode => !actionNode.IsPersistenceAction);
-                var actionsAsString = string.Join("\n", actions);
-                result += $"\n STEP: {step.Key} ACTIONS: {actionsAsString}";
+                throw new Exception($"Index {index} out of range");
             }
-        }
+        
+            var solution = new Dictionary<int, GpActionSet>();
+            foreach (var solutionLayer in _solutions[index]) {
+                var actions = solutionLayer.Value.ActionSet;
+                var step = solutionLayer.Key;
+                solution.Add(step, actions);
+            }
 
-        var output = $"Found {_solutions.Count} solutions. \n Solution: {result}";
-        return output;
+            return solution;
+        }
+    
+        public override string ToString() {
+            if (IsEmpty) return "No solutions found!";
+        
+            var result = "";
+
+            for (var i = 0; i < _solutions.Count; i++)
+            {
+                result += $"Solution: {i}\n";
+                var solution = GetSolution(i);
+                foreach (var step in solution)
+                {
+                    var actions = step.Value.GetActionNodes.Where(actionNode => !actionNode.IsPersistenceAction);
+                    var actionsAsString = string.Join("\n", actions);
+                    result += $"\n STEP: {step.Key} ACTIONS: {actionsAsString}";
+                }
+            }
+
+            var output = $"Found {_solutions.Count} solutions. \n Solution: {result}";
+            return output;
+        }
     }
 }

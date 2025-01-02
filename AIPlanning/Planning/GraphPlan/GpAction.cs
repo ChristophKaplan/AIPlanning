@@ -1,161 +1,164 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using FirstOrderLogic;
 
-namespace AIPlanning.Planning.GraphPlan;
-
-public interface IGpAction {
-    string Signifier { get; }
-    List<ISentence> Preconditions { get; }
-    List<ISentence> Effects { get; }
-    bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied);
-}
-
-public class GpAction : IGpAction , IEquatable<GpAction> {
-    private int _hashcode;
-    public string Signifier { get; }
-    public List<ISentence> Preconditions { get; }
-    public List<ISentence> Effects { get; }
-    public HashSet<Unificator> Unificators { get; private set; } = new();
-
-    private GpAction(GpAction action) : this(action.Signifier,
-        action.Preconditions.Select(p => p.Clone()).ToList(),
-        action.Effects.Select(e => e.Clone()).ToList()) {
+namespace AIPlanning.Planning.GraphPlan {
+    public interface IGpAction {
+        string Signifier { get; }
+        List<ISentence> Preconditions { get; }
+        List<ISentence> Effects { get; }
+        bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied);
     }
 
-    public GpAction(string name, List<ISentence> preconditions, List<ISentence> effects)
-    {
-        Signifier = name;
-        Preconditions = preconditions;
-        Effects = effects;
-        UpdateHashCode();
-    }
+    public class GpAction : IGpAction , IEquatable<GpAction> {
+        private int _hashcode;
+        public string Signifier { get; }
+        public List<ISentence> Preconditions { get; }
+        public List<ISentence> Effects { get; }
+        public HashSet<Unificator> Unificators { get; private set; } = new();
 
-    public GpAction Clone() => new GpAction(this);
-    
-    /*public void DistinctUnificators()
-    {
-        Unificators = Unificators.Distinct().ToList();
-    }*/
-    
-    public void AddUnificators(IEnumerable<Unificator> unificators)
-    {
-        Unificators.UnionWith(unificators);
-    }
-    
-    public bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied) {
-        satisfied = beliefState.GetSubSetOfNodesMatching(Preconditions);
-        return satisfied != null && satisfied.Count == Preconditions.Count;
-    }
-
-    public HashSet<Unificator> GetConflictFreeUnificatorPossibilities(HashSet<Unificator> unificators) {
-        var substitutions = ArrangeSubstitutionsAsTrees(unificators);
-
-        var variables = substitutions.Keys.ToList();
-        var termLists = substitutions.Values.ToList();
-        var combs = termLists.GetCombinations();
-
-        var possibilities = new HashSet<Unificator>();
-
-        foreach (var comb in combs) {
-            var possibility = new Dictionary<Variable, Term>();
-            for (var i = 0; i < variables.Count; i++) {
-                possibility.Add(variables[i], comb[i]);
-            }
-            
-            possibilities.Add(new Unificator(possibility));
+        private GpAction(GpAction action) : this(action.Signifier,
+            action.Preconditions.Select(p => p.Clone()).ToList(),
+            action.Effects.Select(e => e.Clone()).ToList()) {
         }
 
-        return possibilities;
-    }
+        public GpAction(string name, List<ISentence> preconditions, List<ISentence> effects)
+        {
+            Signifier = name;
+            Preconditions = preconditions;
+            Effects = effects;
+            UpdateHashCode();
+        }
 
-    private Dictionary<Variable, List<Term>> ArrangeSubstitutionsAsTrees(HashSet<Unificator> unificators) {
-        var collectPossibilities = new Dictionary<Variable, List<Term>>();
+        public GpAction Clone() => new GpAction(this);
+    
+        /*public void DistinctUnificators()
+        {
+            Unificators = Unificators.Distinct().ToList();
+        }*/
+    
+        public void AddUnificators(IEnumerable<Unificator> unificators)
+        {
+            Unificators.UnionWith(unificators);
+        }
+    
+        public bool IsApplicableToPreconditions(GpBeliefState beliefState, out List<GpNode> satisfied) {
+            satisfied = beliefState.GetSubSetOfNodesMatching(Preconditions);
+            return satisfied != null && satisfied.Count == Preconditions.Count;
+        }
 
-        foreach (var unificator in unificators) {
-            if (unificator.IsEmpty) {
-                continue;
+        public HashSet<Unificator> GetConflictFreeUnificatorPossibilities(HashSet<Unificator> unificators) {
+            var substitutions = ArrangeSubstitutionsAsTrees(unificators);
+
+            var variables = substitutions.Keys.ToList();
+            var termLists = substitutions.Values.ToList();
+            var combs = termLists.GetCombinations();
+
+            var possibilities = new HashSet<Unificator>();
+
+            foreach (var comb in combs) {
+                var possibility = new Dictionary<Variable, Term>();
+                for (var i = 0; i < variables.Count; i++) {
+                    possibility.Add(variables[i], comb[i]);
+                }
+            
+                possibilities.Add(new Unificator(possibility));
             }
 
-            foreach (var substitution in unificator.Substitutions) {
-                if (!collectPossibilities.TryAdd(substitution.Key, new List<Term> { substitution.Value })) {
-                    collectPossibilities[substitution.Key].Add(substitution.Value);
+            return possibilities;
+        }
+
+        private Dictionary<Variable, List<Term>> ArrangeSubstitutionsAsTrees(HashSet<Unificator> unificators) {
+            var collectPossibilities = new Dictionary<Variable, List<Term>>();
+
+            foreach (var unificator in unificators) {
+                if (unificator.IsEmpty) {
+                    continue;
+                }
+
+                foreach (var substitution in unificator.Substitutions) {
+                    if (!collectPossibilities.TryAdd(substitution.Key, new List<Term> { substitution.Value })) {
+                        collectPossibilities[substitution.Key].Add(substitution.Value);
+                    }
                 }
             }
+
+            return collectPossibilities;
         }
 
-        return collectPossibilities;
-    }
+        public void SpecifyAction(Unificator unificator) {
+            foreach (var preCon in Preconditions) {
+                var tempPreCon = preCon;
+                unificator.Substitute(ref tempPreCon);
+            }
 
-    public void SpecifyAction(Unificator unificator) {
-        foreach (var preCon in Preconditions) {
-            var tempPreCon = preCon;
-            unificator.Substitute(ref tempPreCon);
-        }
-
-        foreach (var effect in Effects) {
-            var tempEffect = effect;
-            unificator.Substitute(ref tempEffect);
-        }
+            foreach (var effect in Effects) {
+                var tempEffect = effect;
+                unificator.Substitute(ref tempEffect);
+            }
         
-        UpdateHashCode();
-    }
+            UpdateHashCode();
+        }
 
-    public bool IsConsistent() {
-        var isConflictInPreCons = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOf(p2)));
-        var isConflictInEffects = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOf(eff2)));
-        return !isConflictInPreCons && !isConflictInEffects;
-    }
+        public bool IsConsistent() {
+            var isConflictInPreCons = Preconditions.Any(p1 => Preconditions.Any(p2 => p1.IsNegationOf(p2)));
+            var isConflictInEffects = Effects.Any(eff1 => Effects.Any(eff2 => eff1.IsNegationOf(eff2)));
+            return !isConflictInPreCons && !isConflictInEffects;
+        }
 
-    public override int GetHashCode()
-    {
-        return _hashcode;
-    }
+        public override int GetHashCode()
+        {
+            return _hashcode;
+        }
     
-    private void UpdateHashCode()
-    {
-        var hash = new HashCode();
-        hash.Add(Signifier);
-
-        foreach (var precondition in Preconditions)
+        private void UpdateHashCode()
         {
-            hash.Add(precondition);
+            var hash = new HashCode();
+            hash.Add(Signifier);
+
+            foreach (var precondition in Preconditions)
+            {
+                hash.Add(precondition);
+            }
+
+            foreach (var effect in Effects)
+            {
+                hash.Add(effect);
+            }
+
+            _hashcode = hash.ToHashCode();
         }
 
-        foreach (var effect in Effects)
+        public bool Equals(GpAction? other)
         {
-            hash.Add(effect);
+            if (other == null)
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (_hashcode != other._hashcode)
+            {
+                return false;
+            }
+
+            return Signifier == other.Signifier &&
+                   Preconditions.SequenceEqual(other.Preconditions) &&
+                   Effects.SequenceEqual(other.Effects);
         }
 
-        _hashcode = hash.ToHashCode();
-    }
-
-    public bool Equals(GpAction? other)
-    {
-        if (other == null)
+        public override bool Equals(object? obj)
         {
-            return false;
+            return obj is GpAction other && Equals(other);
         }
 
-        if (ReferenceEquals(this, other))
-        {
-            return true;
+        public override string ToString() {
+            return $"{Signifier} {string.Join(",", Preconditions)} -> {string.Join(",", Effects)}";
         }
-
-        if (_hashcode != other._hashcode)
-        {
-            return false;
-        }
-
-        return Signifier == other.Signifier &&
-               Preconditions.SequenceEqual(other.Preconditions) &&
-               Effects.SequenceEqual(other.Effects);
-    }
-
-    public override bool Equals(object? obj)
-    {
-        return obj is GpAction other && Equals(other);
-    }
-
-    public override string ToString() {
-        return $"{Signifier} {string.Join(",", Preconditions)} -> {string.Join(",", Effects)}";
     }
 }

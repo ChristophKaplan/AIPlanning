@@ -1,5 +1,4 @@
 ﻿using AIPlanning.Planning.GraphPlan;
-using Helpers;
 
 var initialState = GpActionFactory.StringToSentence(new(){"At(Subject1,Home)", "-At(Subject1,Supermarket)", "-At(Subject1,Work)", "Food(Cake)", "-Drink(Cake)", "Subject(Subject1)"});
 var goals = GpActionFactory.StringToSentence(new(){"Have(Cake)", "At(Subject1,Home)"});
@@ -10,4 +9,4 @@ var move = GpActionFactory.Create("Move", new(){"-At(z, x)", "At(z, y)", "Subjec
 
 var problem = new GpProblem(initialState, goals, new(){move, work, buyFood });
 var solution = problem.Solve();
-Logger.Log(solution.ToString());
+Logger.Logger.Log(solution.ToString());

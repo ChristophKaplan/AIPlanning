@@ -1,241 +1,242 @@
+using System.Collections.Generic;
+using System.Linq;
 using FirstOrderLogic;
-using Helpers;
 
-namespace AIPlanning.Planning.GraphPlan;
-
-public class OperatorGraph
-{
-    private readonly GpProblem problem;
-    private readonly List<GpLiteralNode> _literalNodes = new();
-
-    private const int UseCountStop = 10;
-    private List<GpAction> Actions { get; set; }
-
-    public OperatorGraph(GpProblem problem)
+namespace AIPlanning.Planning.GraphPlan {
+    public class OperatorGraph
     {
-        this.problem = problem;
-        Init();
-    }
+        private readonly GpProblem problem;
+        private readonly List<GpLiteralNode> _literalNodes = new();
 
-    private void Init()
-    {
-        Actions = problem.Actions;
+        private const int UseCountStop = 10;
+        private List<GpAction> Actions { get; set; }
 
-        var startNode = new GpActionNode(new GpAction("Start", new List<ISentence>(), problem.InitialState));
-        var finishNode = new GpActionNode(new GpAction("Finish", problem.Goals, new List<ISentence>()));
-
-        //init the effects of start as preconditions
-        foreach (var preCon in startNode.GpAction.Effects)
+        public OperatorGraph(GpProblem problem)
         {
-            _literalNodes.Add(new GpLiteralNode(preCon));
+            this.problem = problem;
+            Init();
         }
 
-        Actions.Add(startNode.GpAction);
-        Actions.Add(finishNode.GpAction);
-
-        ConstructGraphRecursivly(finishNode);
-        ReplaceAbstractWithConcreteActions();
-
-        Logger.Log($"Operator Graph: {ToString()}");
-    }
-
-    public List<GpAction> GetActionsForLiteral(ISentence literal)
-    {
-        var instances = new List<GpAction>();
-        var node = _literalNodes.FirstOrDefault(node => literal.Equals(node.Literal));
-        if (node == null)
+        private void Init()
         {
+            Actions = problem.Actions;
+
+            var startNode = new GpActionNode(new GpAction("Start", new List<ISentence>(), problem.InitialState));
+            var finishNode = new GpActionNode(new GpAction("Finish", problem.Goals, new List<ISentence>()));
+
+            //init the effects of start as preconditions
+            foreach (var preCon in startNode.GpAction.Effects)
+            {
+                _literalNodes.Add(new GpLiteralNode(preCon));
+            }
+
+            Actions.Add(startNode.GpAction);
+            Actions.Add(finishNode.GpAction);
+
+            ConstructGraphRecursivly(finishNode);
+            ReplaceAbstractWithConcreteActions();
+
+            Logger.Logger.Log($"Operator Graph: {ToString()}");
+        }
+
+        public List<GpAction> GetActionsForLiteral(ISentence literal)
+        {
+            var instances = new List<GpAction>();
+            var node = _literalNodes.FirstOrDefault(node => literal.Equals(node.Literal));
+            if (node == null)
+            {
+                return instances;
+            }
+
+            var direct = node.OutEdges.Select(outEdge => ((GpActionNode)outEdge).GpAction).ToList();
+            instances.AddRange(direct);
+
             return instances;
         }
 
-        var direct = node.OutEdges.Select(outEdge => ((GpActionNode)outEdge).GpAction).ToList();
-        instances.AddRange(direct);
-
-        return instances;
-    }
-
-    private void ReplaceAbstractWithConcreteActions()
-    {
-        var instanceMap = InstantiateActions();
-
-        foreach (var literalNode in _literalNodes)
+        private void ReplaceAbstractWithConcreteActions()
         {
-            var allInstances = new List<GpAction>();
-            for (var i = literalNode.OutEdges.Count - 1; i >= 0; i--)
+            var instanceMap = InstantiateActions();
+
+            foreach (var literalNode in _literalNodes)
             {
-                var outEdge = literalNode.OutEdges[i];
-                if (outEdge is GpActionNode actionNode &&
-                    instanceMap.TryGetValue(actionNode.GpAction, out var instances))
+                var allInstances = new List<GpAction>();
+                for (var i = literalNode.OutEdges.Count - 1; i >= 0; i--)
                 {
-                    allInstances.AddRange(instances);
-                    literalNode.OutEdges.Remove(actionNode);
+                    var outEdge = literalNode.OutEdges[i];
+                    if (outEdge is GpActionNode actionNode &&
+                        instanceMap.TryGetValue(actionNode.GpAction, out var instances))
+                    {
+                        allInstances.AddRange(instances);
+                        literalNode.OutEdges.Remove(actionNode);
+                    }
+                }
+
+                foreach (var instance in allInstances)
+                {
+                    literalNode.ConnectTo(new GpActionNode(instance));
                 }
             }
-
-            foreach (var instance in allInstances)
-            {
-                literalNode.ConnectTo(new GpActionNode(instance));
-            }
         }
-    }
 
-    private Dictionary<GpAction, List<GpAction>> InstantiateActions()
-    {
-        var mapping = new Dictionary<GpAction, List<GpAction>>();
-        foreach (var action in Actions)
+        private Dictionary<GpAction, List<GpAction>> InstantiateActions()
         {
-            //action.DistinctUnificators();
-            var possibleInstances = new List<GpAction>();
-
-            var noMultipleInstancesNeeded = action.Unificators.All(u => u.IsEmpty);
-            if (noMultipleInstancesNeeded)
+            var mapping = new Dictionary<GpAction, List<GpAction>>();
+            foreach (var action in Actions)
             {
-                possibleInstances.Add(action.Clone());
+                //action.DistinctUnificators();
+                var possibleInstances = new List<GpAction>();
+
+                var noMultipleInstancesNeeded = action.Unificators.All(u => u.IsEmpty);
+                if (noMultipleInstancesNeeded)
+                {
+                    possibleInstances.Add(action.Clone());
+                    mapping.Add(action, possibleInstances);
+                    continue;
+                }
+
+                var conflictFreeUnificators = action.GetConflictFreeUnificatorPossibilities(action.Unificators);
+                foreach (var unificator in conflictFreeUnificators)
+                {
+                    var clone = action.Clone();
+                    clone.SpecifyAction(unificator);
+                    if (clone.IsConsistent())
+                    {
+                        possibleInstances.Add(clone);
+                    }
+                }
+
                 mapping.Add(action, possibleInstances);
-                continue;
             }
 
-            var conflictFreeUnificators = action.GetConflictFreeUnificatorPossibilities(action.Unificators);
-            foreach (var unificator in conflictFreeUnificators)
+            return mapping;
+        }
+
+        private void ConstructGraphRecursivly(GpNode curNode)
+        {
+            var operatorNodes = new Dictionary<GpAction, GpActionNode>();
+
+            switch (curNode)
             {
-                var clone = action.Clone();
-                clone.SpecifyAction(unificator);
-                if (clone.IsConsistent())
+                case GpActionNode curOperator:
+                    MapPreConditionsToAction(curOperator, operatorNodes);
+                    break;
+                case GpLiteralNode curState:
+                    FindApplicableAction(curState, operatorNodes);
+                    break;
+            }
+        }
+
+        private void MapPreConditionsToAction(GpActionNode curAction, Dictionary<GpAction, GpActionNode> operatorNodes)
+        {
+            //necessary preconditions of an action but not sufficient
+
+            foreach (var preCon in curAction.GpAction.Preconditions)
+            {
+                if (!TryGetMatchingLiteralNodes(preCon, out var literalNodes, out var unificators))
                 {
-                    possibleInstances.Add(clone);
+                    //TODO: clarify if its a problem that we can add literals with "unspecified variables" here.
+                    literalNodes = new List<GpLiteralNode>() { new(preCon) };
+                    _literalNodes.AddRange(literalNodes);
+                }
+
+                curAction.GpAction.AddUnificators(unificators);
+
+                foreach (var literalNode in literalNodes)
+                {
+                    literalNode.ConnectTo(curAction);
+                    FindApplicableAction(literalNode, operatorNodes);
                 }
             }
-
-            mapping.Add(action, possibleInstances);
         }
 
-        return mapping;
-    }
-
-    private void ConstructGraphRecursivly(GpNode curNode)
-    {
-        var operatorNodes = new Dictionary<GpAction, GpActionNode>();
-
-        switch (curNode)
+        private bool TryGetMatchingLiteralNodes(ISentence literal, out List<GpLiteralNode> preConNodes, out List<Unificator> unificators)
         {
-            case GpActionNode curOperator:
-                MapPreConditionsToAction(curOperator, operatorNodes);
-                break;
-            case GpLiteralNode curState:
-                FindApplicableAction(curState, operatorNodes);
-                break;
+            var isMatch = false;
+            unificators = new List<Unificator>();
+            preConNodes = new List<GpLiteralNode>();
+
+            foreach (var node in _literalNodes)
+            {
+                if (!node.Literal.Match(literal, out var uni))
+                {
+                    continue;
+                }
+
+                preConNodes.Add(node);
+                unificators.Add(uni);
+                isMatch = true;
+            }
+
+            return isMatch;
         }
-    }
 
-    private void MapPreConditionsToAction(GpActionNode curAction, Dictionary<GpAction, GpActionNode> operatorNodes)
-    {
-        //necessary preconditions of an action but not sufficient
-
-        foreach (var preCon in curAction.GpAction.Preconditions)
+        private void FindApplicableAction(GpLiteralNode curLiteral, Dictionary<GpAction, GpActionNode> operatorNodes)
         {
-            if (!TryGetMatchingLiteralNodes(preCon, out var literalNodes, out var unificators))
+            foreach (var action in Actions)
             {
-                //TODO: clarify if its a problem that we can add literals with "unspecified variables" here.
-                literalNodes = new List<GpLiteralNode>() { new(preCon) };
-                _literalNodes.AddRange(literalNodes);
-            }
+                if (!IsEffectsApplicable(action, curLiteral.Literal))
+                {
+                    continue;
+                }
 
-            curAction.GpAction.AddUnificators(unificators);
+                if (!operatorNodes.TryGetValue(action, out var operatorNode))
+                {
+                    operatorNode = new GpActionNode(action);
+                    operatorNodes.Add(action, operatorNode);
+                }
+                else if (!operatorNode.TryIncreaseUseCount(UseCountStop))
+                {
+                    continue;
+                }
 
-            foreach (var literalNode in literalNodes)
-            {
-                literalNode.ConnectTo(curAction);
-                FindApplicableAction(literalNode, operatorNodes);
+                operatorNode.ConnectTo(curLiteral);
+                MapPreConditionsToAction(operatorNode, operatorNodes);
             }
         }
-    }
 
-    private bool TryGetMatchingLiteralNodes(ISentence literal, out List<GpLiteralNode> preConNodes, out List<Unificator> unificators)
-    {
-        var isMatch = false;
-        unificators = new List<Unificator>();
-        preConNodes = new List<GpLiteralNode>();
-
-        foreach (var node in _literalNodes)
+        private bool IsEffectsApplicable(GpAction action, ISentence literal)
         {
-            if (!node.Literal.Match(literal, out var uni))
+            var uniList = new List<Unificator>();
+            var isMatch = false;
+
+            foreach (var effect in action.Effects)
             {
-                continue;
+                if (!effect.Match(literal, out var uni))
+                {
+                    continue;
+                }
+
+                if (!uni.IsEmpty)
+                {
+                    uniList.Add(uni);
+                }
+
+                isMatch = true;
             }
 
-            preConNodes.Add(node);
-            unificators.Add(uni);
-            isMatch = true;
+            if (!isMatch)
+            {
+                return false;
+            }
+
+            action.AddUnificators(uniList);
+            return action.IsConsistent();
         }
 
-        return isMatch;
-    }
-
-    private void FindApplicableAction(GpLiteralNode curLiteral, Dictionary<GpAction, GpActionNode> operatorNodes)
-    {
-        foreach (var action in Actions)
+        public override string ToString()
         {
-            if (!IsEffectsApplicable(action, curLiteral.Literal))
+            var output = "Operator Graph\n";
+
+            foreach (var preConNode in _literalNodes)
             {
-                continue;
+                var preCon = preConNode.Literal;
+                var outEdges =
+                    preConNode.OutEdges.Aggregate("", (acc, edge) => acc + $"\n\t\t\t\t{((GpActionNode)edge).GpAction},");
+                output += $"Literal: {preCon} out:{preConNode.OutEdges.Count} -> [{outEdges}]\n";
             }
 
-            if (!operatorNodes.TryGetValue(action, out var operatorNode))
-            {
-                operatorNode = new GpActionNode(action);
-                operatorNodes.Add(action, operatorNode);
-            }
-            else if (!operatorNode.TryIncreaseUseCount(UseCountStop))
-            {
-                continue;
-            }
-
-            operatorNode.ConnectTo(curLiteral);
-            MapPreConditionsToAction(operatorNode, operatorNodes);
+            return output;
         }
-    }
-
-    private bool IsEffectsApplicable(GpAction action, ISentence literal)
-    {
-        var uniList = new List<Unificator>();
-        var isMatch = false;
-
-        foreach (var effect in action.Effects)
-        {
-            if (!effect.Match(literal, out var uni))
-            {
-                continue;
-            }
-
-            if (!uni.IsEmpty)
-            {
-                uniList.Add(uni);
-            }
-
-            isMatch = true;
-        }
-
-        if (!isMatch)
-        {
-            return false;
-        }
-
-        action.AddUnificators(uniList);
-        return action.IsConsistent();
-    }
-
-    public override string ToString()
-    {
-        var output = "Operator Graph\n";
-
-        foreach (var preConNode in _literalNodes)
-        {
-            var preCon = preConNode.Literal;
-            var outEdges =
-                preConNode.OutEdges.Aggregate("", (acc, edge) => acc + $"\n\t\t\t\t{((GpActionNode)edge).GpAction},");
-            output += $"Literal: {preCon} out:{preConNode.OutEdges.Count} -> [{outEdges}]\n";
-        }
-
-        return output;
     }
 }
