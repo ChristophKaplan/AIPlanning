@@ -5,9 +5,11 @@ namespace AIPlanningExample {
     class Program {
         static void Main(string[] args) {
             var initialState = GpActionFactory.StringToSentence(new() {
-                "At(Subject1,Home)",
+                "At(Subject1,mylocation)",
                 "-At(Subject1,Supermarket)",
                 "-At(Subject1,Work)",
+                "-At(Subject1,Home)",
+                "-Have(Cake)", //need this ?
                 "Food(Cake)",
                 "-Drink(Cake)",
                 "Subject(Subject1)"
